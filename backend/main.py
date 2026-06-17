@@ -1,3 +1,4 @@
+import pandas as pd
 from fastapi import FastAPI
 
 app = FastAPI()
@@ -9,30 +10,19 @@ def home():
     "status": "Running"
 }
  
-@app.get("/country/{country_name}")
-def get_country_data(country_name: str):
 
-    climate_data = {
-        "Nepal": {
-            "year": 2020,
-            "co2_emissions": "16.9 Mt",
-            "renewable_energy": "85%"
-        },
 
-        "Canada": {
-            "year": 2020,
-            "co2_emissions": "672 Mt",
-            "renewable_energy": "18%"
-        },
+@app.get("/country/{country_name}/{year}")
+def get_country_data(country_name: str, year: int):
 
-        "India": {
-            "year": 2020,
-            "co2_emissions": "2441 Mt",
-            "renewable_energy": "11%"
-        }
-    }
+    df = pd.read_csv("../data/climate_data.csv")
 
-    return climate_data.get(
-        country_name,
-        {"error": "Country not found"}
-    )
+    result = df[
+        (df["country"].str.lower() == country_name.lower()) &
+        (df["year"] == year)
+    ]
+
+    if result.empty:
+        return {"error": "No data found"}
+
+    return result.iloc[0].to_dict()
