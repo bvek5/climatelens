@@ -10,6 +10,19 @@ def home():
     "status": "Running"
 }
 
+@app.get("/countries")
+def get_countries():
+
+    df = pd.read_csv("../data/owid-co2-data.csv")
+
+    countries = df["country"].dropna().unique().tolist()
+    countries.sort()
+
+    return {
+        "count": len(countries),
+        "countries": countries
+    }
+
 @app.get("/country/{country_name}/history")
 def get_country_history(country_name: str):
 
