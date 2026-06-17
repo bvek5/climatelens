@@ -9,6 +9,24 @@ def home():
     "Project": "climatelens",
     "status": "Running"
 }
+
+@app.get("/country/{country_name}/history")
+def get_country_history(country_name: str):
+
+    df = pd.read_csv("../data/owid-co2-data.csv")
+
+    result = df[
+        df["country"].str.lower() == country_name.lower()
+    ]
+
+    if result.empty:
+        return {"error": "No data found"}
+
+    result = result[["year", "co2", "co2_per_capita", "population", "total_ghg"]]
+
+    result = result.astype(object).where(pd.notnull(result), None)
+
+    return result.to_dict(orient="records")
  
 @app.get("/country/{country_name}/{year}")
 def get_country_data(country_name: str, year: int):
@@ -38,3 +56,5 @@ def get_country_data(country_name: str, year: int):
     "total_ghg": row["total_ghg"],
     "temperature_change_from_co2": row["temperature_change_from_co2"]
 }
+
+   
