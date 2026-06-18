@@ -1,5 +1,6 @@
 import pandas as pd
 from fastapi import FastAPI
+from app.services.data_service import load_climate_data, clean_missing_values
 
 app = FastAPI()
 
@@ -13,7 +14,7 @@ def home():
 @app.get("/countries")
 def get_countries():
 
-    df = pd.read_csv("../data/owid-co2-data.csv")
+    df = load_climate_data()
 
     countries = df["country"].dropna().unique().tolist()
     countries.sort()
@@ -27,7 +28,7 @@ def get_countries():
 @app.get("/country/{country_name}/latest")
 def get_latest_country_data(country_name: str):
 
-    df = pd.read_csv("../data/owid-co2-data.csv")
+    df = load_climate_data()
 
     result = df[
         df["country"].str.lower() == country_name.lower()
@@ -55,7 +56,7 @@ def get_latest_country_data(country_name: str):
 @app.get("/country/{country_name}/history")
 def get_country_history(country_name: str):
 
-    df = pd.read_csv("../data/owid-co2-data.csv")
+    df = load_climate_data()
 
     result = df[
         df["country"].str.lower() == country_name.lower()
@@ -66,14 +67,14 @@ def get_country_history(country_name: str):
 
     result = result[["year", "co2", "co2_per_capita", "population", "total_ghg"]]
 
-    result = result.astype(object).where(pd.notnull(result), None)
+    result = clean_missing_values(result)
 
     return result.to_dict(orient="records")
  
 @app.get("/country/{country_name}/{year}")
 def get_country_data(country_name: str, year: int):
 
-    df = pd.read_csv("../data/owid-co2-data.csv")
+    df = load_climate_data()
 
     result = df[
         (df["country"].str.lower() == country_name.lower()) &
@@ -102,7 +103,7 @@ def get_country_data(country_name: str, year: int):
 @app.get("/compare/{country_one}/{country_two}/{year}")
 def compare_countries(country_one: str, country_two: str, year: int):
 
-    df = pd.read_csv("../data/owid-co2-data.csv")
+    df = load_climate_data()
 
     result = df[
         (df["country"].str.lower().isin([country_one.lower(), country_two.lower()])) &
@@ -122,6 +123,6 @@ def compare_countries(country_one: str, country_two: str, year: int):
         "primary_energy_consumption"
     ]]
 
-    result = result.astype(object).where(pd.notnull(result), None)
+    result = clean_missing_values(result)
 
     return result.to_dict(orient="records")
