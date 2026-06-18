@@ -172,3 +172,73 @@ def compare_country_history(country_one: str, country_two: str):
     result = clean_missing_values(result)
 
     return result.to_dict(orient="records")
+
+@app.get("/sustainability/{country_name}")
+def get_sustainability_index(country_name: str):
+
+    df = load_climate_data()
+
+    df["gdp_per_capita"] = df["gdp"] / df["population"]
+
+    required_columns = [
+        "co2_per_capita",
+        "ghg_per_capita",
+        "energy_per_gdp",
+        "gdp_per_capita"
+    ]
+
+    clean_df = df.dropna(subset=required_columns).copy()
+
+    country_data = clean_df[
+        clean_df["country"].str.lower() == country_name.lower()
+    ]
+
+    if country_data.empty:
+        return {"error": "Not enough data to calculate sustainability index"}
+
+    latest_data = clean_df[clean_df["year"] == clean_df["year"].max()]
+
+    row = country_data.sort_values("year", ascending=False).iloc[0]
+
+    def lower_is_better(value, max_value):
+        return 100 - ((value / max_value) * 100)
+
+    def higher_is_better(value, max_value):
+        return (value / max_value) * 100
+
+    climate_raw = (row["co2_per_capita"] + row["ghg_per_capita"]) / 2
+
+    clean_df["climate_raw"] = (
+        clean_df["co2_per_capita"] + clean_df["ghg_per_capita"]
+    ) / 2
+
+    climate_score = lower_is_better(
+        climate_raw,
+        clean_df["climate_raw"].max()
+    )
+
+    energy_score = lower_is_better(
+        row["energy_per_gdp"],
+        clean_df["energy_per_gdp"].max()
+    )
+
+    prosperity_score = higher_is_better(
+        row["gdp_per_capita"],
+        clean_df["gdp_per_capita"].max()
+    )
+
+    sustainability_index = (
+        climate_score * 0.40
+        + energy_score * 0.30
+        + prosperity_score * 0.30
+    )
+
+    return {
+        "country": row["country"],
+        "year": int(row["year"]),
+        "sustainability_index": round(sustainability_index, 2),
+        "climate_score": round(climate_score, 2),
+        "energy_score": round(energy_score, 2),
+        "prosperity_score": round(prosperity_score, 2),
+        "gdp_per_capita": round(row["gdp_per_capita"], 2)
+    }

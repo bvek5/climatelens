@@ -20,6 +20,7 @@ function Compare() {
   const [historyRaw, setHistoryRaw] = useState([]);
   const [selectedMetric, setSelectedMetric] = useState("co2");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const metricLabels = {
     population: "Population",
@@ -61,6 +62,7 @@ function Compare() {
       return;
     }
 
+    setLoading(true);
     setError("");
     setComparison([]);
     setHistoryRaw([]);
@@ -74,6 +76,7 @@ function Compare() {
 
       if (result.error || !Array.isArray(result) || result.length < 2) {
         setError("Comparison not found. Please select two valid countries and year.");
+        setLoading(false);
         return;
       }
 
@@ -87,6 +90,7 @@ function Compare() {
 
       if (historyResult.error || !Array.isArray(historyResult)) {
         setError("Trend data not found for these countries.");
+        setLoading(false);
         return;
       }
 
@@ -95,6 +99,8 @@ function Compare() {
       console.error(error);
       setError("Could not connect to the backend. Make sure FastAPI is running.");
     }
+
+    setLoading(false);
   };
 
   const trendData = buildTrendData(historyRaw, selectedMetric);
@@ -137,8 +143,12 @@ function Compare() {
             onChange={(e) => setCompareYear(e.target.value)}
           />
 
-          <button onClick={compareCountries}>Compare</button>
+          <button onClick={compareCountries} disabled={loading}>
+            {loading ? "Loading..." : "Compare"}
+          </button>
         </div>
+
+        {loading && <p className="loading-message">Loading comparison...</p>}
 
         {error && <p className="error-message">{error}</p>}
 
