@@ -1,63 +1,86 @@
 import { useState } from "react";
+import "./App.css";
 
 function App() {
   const [country, setCountry] = useState("");
   const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const fetchCountry = async () => {
-  console.log("Search clicked");
+    if (!country.trim()) return;
 
-  try {
-    const response = await fetch(
-      `http://127.0.0.1:8000/country/${country}/latest`
-    );
+    setLoading(true);
 
-    const result = await response.json();
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/country/${country}/latest`
+      );
 
-    console.log(result);
+      const result = await response.json();
+      setData(result);
+    } catch (error) {
+      console.error(error);
+      alert("Country not found.");
+    }
 
-    setData(result);
-  } catch (error) {
-    console.error(error);
-  }
-};
+    setLoading(false);
+  };
 
   return (
-    <div style={{ padding: "30px", fontFamily: "Arial" }}>
+    <div className="container">
       <h1>🌍 ClimateLens</h1>
+      <p className="subtitle">
+        Explore climate and emissions data by country
+      </p>
 
-      <input
-        type="text"
-        placeholder="Enter country"
-        value={country}
-        onChange={(e) => setCountry(e.target.value)}
-        style={{
-          padding: "10px",
-          marginRight: "10px",
-          width: "250px",
-        }}
-      />
+      <div className="search-box">
+        <input
+          type="text"
+          placeholder="Enter country..."
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+        />
 
-      <button
-        onClick={fetchCountry}
-        style={{
-          padding: "10px 15px",
-          cursor: "pointer",
-        }}
-      >
-        Search
-      </button>
+        <button onClick={fetchCountry}>
+          {loading ? "Loading..." : "Search"}
+        </button>
+      </div>
 
       {data && (
-        <div style={{ marginTop: "30px" }}>
+        <div className="card">
           <h2>{data.country}</h2>
 
-          <p><strong>Latest Year:</strong> {data.latest_year}</p>
-          <p><strong>Population:</strong> {data.population}</p>
-          <p><strong>CO₂:</strong> {data.co2}</p>
-          <p><strong>CO₂ per Capita:</strong> {data.co2_per_capita}</p>
-          <p><strong>Total GHG:</strong> {data.total_ghg}</p>
-          <p><strong>Primary Energy:</strong> {data.primary_energy_consumption}</p>
+          <div className="stats">
+            <div className="stat">
+              <span>Latest Year</span>
+              <strong>{data.latest_year}</strong>
+            </div>
+
+            <div className="stat">
+              <span>Population</span>
+              <strong>{Number(data.population).toLocaleString()}</strong>
+            </div>
+
+            <div className="stat">
+              <span>CO₂</span>
+              <strong>{data.co2}</strong>
+            </div>
+
+            <div className="stat">
+              <span>CO₂ Per Capita</span>
+              <strong>{data.co2_per_capita}</strong>
+            </div>
+
+            <div className="stat">
+              <span>Total GHG</span>
+              <strong>{data.total_ghg}</strong>
+            </div>
+
+            <div className="stat">
+              <span>Primary Energy</span>
+              <strong>{data.primary_energy_consumption}</strong>
+            </div>
+          </div>
         </div>
       )}
     </div>
