@@ -1,15 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function Sustainability() {
   const [country, setCountry] = useState("");
+  const [countries, setCountries] = useState([]);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
   const getRating = (score) => {
-  if (score >= 75) return "🟢 Strong Sustainability";
-  if (score >= 50) return "🟡 Moderate Sustainability";
-  return "🔴 Needs Improvement";
-};
+    if (score >= 75) return "🟢 Strong Sustainability";
+    if (score >= 50) return "🟡 Moderate Sustainability";
+    return "🔴 Needs Improvement";
+  };
+
+  useEffect(() => {
+    const fetchCountries = async () => {
+      const response = await fetch("http://127.0.0.1:8000/countries");
+      const data = await response.json();
+      setCountries(data.countries);
+    };
+
+    fetchCountries();
+  }, []);
 
   const searchCountry = async () => {
     if (!country.trim()) {
@@ -49,11 +60,18 @@ function Sustainability() {
 
       <div className="search-box">
         <input
+          list="sustainability-country-list"
           type="text"
-          placeholder="Enter country..."
+          placeholder="Search country..."
           value={country}
           onChange={(e) => setCountry(e.target.value)}
         />
+
+        <datalist id="sustainability-country-list">
+          {countries.map((item) => (
+            <option key={item} value={item} />
+          ))}
+        </datalist>
 
         <button onClick={searchCountry}>Calculate</button>
       </div>
@@ -69,9 +87,7 @@ function Sustainability() {
             <span>/100</span>
           </div>
 
-          <p className="index-label">
-            {getRating(result.sustainability_index)}
-          </p>
+          <p className="index-label">{getRating(result.sustainability_index)}</p>
 
           <div className="progress-bar">
             <div
