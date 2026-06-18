@@ -99,4 +99,29 @@ def get_country_data(country_name: str, year: int):
     "temperature_change_from_co2": row["temperature_change_from_co2"]
 }
 
-   
+@app.get("/compare/{country_one}/{country_two}/{year}")
+def compare_countries(country_one: str, country_two: str, year: int):
+
+    df = pd.read_csv("../data/owid-co2-data.csv")
+
+    result = df[
+        (df["country"].str.lower().isin([country_one.lower(), country_two.lower()])) &
+        (df["year"] == year)
+    ]
+
+    if result.empty:
+        return {"error": "No data found"}
+
+    result = result[[
+        "country",
+        "year",
+        "population",
+        "co2",
+        "co2_per_capita",
+        "total_ghg",
+        "primary_energy_consumption"
+    ]]
+
+    result = result.astype(object).where(pd.notnull(result), None)
+
+    return result.to_dict(orient="records")
