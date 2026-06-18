@@ -24,7 +24,27 @@ def get_countries():
 
     df = load_climate_data()
 
-    countries = df["country"].dropna().unique().tolist()
+    df = df[df["iso_code"].notna()]
+    df = df[df["iso_code"].str.len() == 3]
+
+    excluded = [
+        "World",
+        "Asia",
+        "Africa",
+        "Europe",
+        "North America",
+        "South America",
+        "Oceania",
+        "European Union",
+        "High-income countries",
+        "Low-income countries",
+        "Lower-middle-income countries",
+        "Upper-middle-income countries",
+        "Least developed countries (Jones et al.)",
+        "OECD (Jones et al.)",
+    ]
+
+    countries = df[~df["country"].isin(excluded)]["country"].dropna().unique().tolist()
     countries.sort()
 
     return {
