@@ -296,3 +296,62 @@ h1, h2 {
   line-height: 1.6;
   margin-bottom: 12px;
 }
+
+.sustainability-compare-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.sustainability-mini-card {
+  background: #ecfdf5;
+  padding: 22px;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.sustainability-mini-card h3 {
+  margin-bottom: 10px;
+  color: #111827;
+}
+
+.mini-index-score {
+  font-size: 42px;
+  font-weight: 800;
+  color: #0f766e;
+}
+
+.mini-index-score span {
+  font-size: 18px;
+  color: #64748b;
+  margin-left: 3px;
+}
+
+.mini-rating {
+  font-weight: 700;
+  color: #0f766e;
+  margin: 8px 0 14px;
+}
+
+.mini-pillars {
+  margin-top: 15px;
+  color: #475569;
+}
+
+.mini-pillars p {
+  margin: 6px 0;
+}
+
+.winner-box {
+  background: #fef9c3;
+  border: 1px solid #fde68a;
+  color: #713f12;
+  padding: 16px;
+  border-radius: 12px;
+  margin: 18px 0;
+  text-align: center;
+}
+
+.winner-box h3 {
+  margin-bottom: 6px;
+}

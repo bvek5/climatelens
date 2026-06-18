@@ -242,3 +242,14 @@ def get_sustainability_index(country_name: str):
         "prosperity_score": round(prosperity_score, 2),
         "gdp_per_capita": round(row["gdp_per_capita"], 2)
     }
+
+@app.get("/sustainability-compare/{country_one}/{country_two}")
+def compare_sustainability(country_one: str, country_two: str):
+
+    first = get_sustainability_index(country_one)
+    second = get_sustainability_index(country_two)
+
+    if "error" in first or "error" in second:
+        return {"error": "Could not calculate sustainability index for one or both countries"}
+
+    return [first, second]

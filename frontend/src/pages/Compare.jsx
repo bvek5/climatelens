@@ -18,6 +18,7 @@ function Compare() {
   const [compareYear, setCompareYear] = useState("2024");
   const [comparison, setComparison] = useState([]);
   const [historyRaw, setHistoryRaw] = useState([]);
+  const [sustainabilityComparison, setSustainabilityComparison] = useState([]);
   const [selectedMetric, setSelectedMetric] = useState("co2");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -66,6 +67,7 @@ function Compare() {
     setError("");
     setComparison([]);
     setHistoryRaw([]);
+    setSustainabilityComparison([]);
 
     try {
       const response = await fetch(
@@ -81,6 +83,16 @@ function Compare() {
       }
 
       setComparison(result);
+
+      const sustainabilityResponse = await fetch(
+        `http://127.0.0.1:8000/sustainability-compare/${countryOne}/${countryTwo}`
+      );
+
+      const sustainabilityResult = await sustainabilityResponse.json();
+
+      if (!sustainabilityResult.error && Array.isArray(sustainabilityResult)) {
+        setSustainabilityComparison(sustainabilityResult);
+      }
 
       const historyResponse = await fetch(
         `http://127.0.0.1:8000/compare-history/${countryOne}/${countryTwo}`
@@ -101,6 +113,12 @@ function Compare() {
     }
 
     setLoading(false);
+  };
+
+  const getRating = (score) => {
+    if (score >= 75) return "🟢 Strong";
+    if (score >= 50) return "🟡 Moderate";
+    return "🔴 Needs Improvement";
   };
 
   const trendData = buildTrendData(historyRaw, selectedMetric);
@@ -154,6 +172,74 @@ function Compare() {
 
         {comparison.length > 0 && (
           <>
+            {sustainabilityComparison.length > 0 && (
+              <div className="chart-card">
+                <h2>Sustainability Index Comparison</h2>
+                
+                {(() => {
+                    const winner =
+                        sustainabilityComparison[0].sustainability_index >=
+                        sustainabilityComparison[1].sustainability_index
+                            ? sustainabilityComparison[0]
+                            : sustainabilityComparison[1];
+
+                    const loser =
+                        sustainabilityComparison[0].country === winner.country
+                        ? sustainabilityComparison[1]
+                        : sustainabilityComparison[0];
+
+                    const difference = Math.abs(
+                        winner.sustainability_index - loser.sustainability_index
+                        ).toFixed(2);
+
+                    return (
+                        <div className="winner-box">
+                         <h3>🏆 {winner.country} has the higher Sustainability Index</h3>
+                         <p>
+                        {winner.country} scores {difference} points higher than {loser.country}.
+                         </p>
+                        </div>
+                      );
+                })()}
+
+                <div className="sustainability-compare-grid">
+                  {sustainabilityComparison.map((item) => (
+                    <div className="sustainability-mini-card" key={item.country}>
+                      <h3>{item.country}</h3>
+
+                      <div className="mini-index-score">
+                        {item.sustainability_index}
+                        <span>/100</span>
+                      </div>
+
+                      <p className="mini-rating">
+                        {getRating(item.sustainability_index)}
+                      </p>
+
+                      <div className="progress-bar">
+                        <div
+                          className="progress-fill"
+                          style={{ width: `${item.sustainability_index}%` }}
+                        ></div>
+                      </div>
+
+                      <div className="mini-pillars">
+                        <p>
+                          Climate: <strong>{item.climate_score}</strong>
+                        </p>
+                        <p>
+                          Energy: <strong>{item.energy_score}</strong>
+                        </p>
+                        <p>
+                          Prosperity: <strong>{item.prosperity_score}</strong>
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="metric-selector">
               <label>Chart Metric: </label>
 
