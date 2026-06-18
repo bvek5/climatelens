@@ -392,3 +392,7 @@ h1, h2 {
   cursor: pointer;
 }
 
+.map-tooltip-space {
+  height: 45px;
+  margin-top: 15px;
+}

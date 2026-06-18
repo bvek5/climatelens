@@ -9,6 +9,7 @@ function WorldMap() {
   const [topCountries, setTopCountries] = useState([]);
   const [bottomCountries, setBottomCountries] = useState([]);
   const [hoveredCountry, setHoveredCountry] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState(null);
 
   const projection = geoNaturalEarth1().scale(170).translate([450, 250]);
   const pathGenerator = geoPath().projection(projection);
@@ -41,25 +42,33 @@ function WorldMap() {
   }, []);
 
   const getCountryInfo = (name) => {
-    const top = topCountries.find((item) => item.country === name);
-    const bottom = bottomCountries.find((item) => item.country === name);
+    const top = topCountries.find(
+      (item) => item.country.toLowerCase() === name.toLowerCase()
+    );
 
     if (top) {
       return {
         fill: "#0f766e",
-        label: `${name}: ${top.sustainability_index}/100 - Top 10`,
+        data: top,
+        label: `${name} | Sustainability Index: ${top.sustainability_index}`,
       };
     }
+
+    const bottom = bottomCountries.find(
+      (item) => item.country.toLowerCase() === name.toLowerCase()
+    );
 
     if (bottom) {
       return {
         fill: "#dc2626",
-        label: `${name}: ${bottom.sustainability_index}/100 - Bottom 10`,
+        data: bottom,
+        label: `${name} | Sustainability Index: ${bottom.sustainability_index}`,
       };
     }
 
     return {
       fill: "#d1d5db",
+      data: null,
       label: name,
     };
   };
@@ -67,11 +76,15 @@ function WorldMap() {
   return (
     <div className="container">
       <h1>🌍 World Sustainability Map</h1>
+
       <p className="subtitle">
-        Green countries are Top 10 sustainability performers. Red countries are Bottom 10.
+        Green countries are Top 10 sustainability performers. Red countries are
+        Bottom 10.
       </p>
 
-      {hoveredCountry && <p className="map-tooltip">{hoveredCountry}</p>}
+      <div className="map-tooltip-space">
+        {hoveredCountry && <p className="map-tooltip">{hoveredCountry}</p>}
+    </div>
 
       <div className="map-card">
         <svg viewBox="0 0 900 500" className="world-map-svg">
@@ -86,8 +99,14 @@ function WorldMap() {
                 fill={info.fill}
                 stroke="#ffffff"
                 strokeWidth={0.5}
+                style={{ cursor: info.data ? "pointer" : "default" }}
                 onMouseEnter={() => setHoveredCountry(info.label)}
                 onMouseLeave={() => setHoveredCountry("")}
+                onClick={() => {
+                  if (info.data) {
+                    setSelectedCountry(info.data);
+                  }
+                }}
               />
             );
           })}
@@ -99,6 +118,36 @@ function WorldMap() {
         <span>🔴 Bottom 10 Sustainability</span>
         <span>⚪ Other Countries</span>
       </div>
+
+      {selectedCountry && (
+        <div className="sustainability-card">
+          <h2>{selectedCountry.country}</h2>
+
+          <div className="index-score">
+            {selectedCountry.sustainability_index}
+            <span>/100</span>
+          </div>
+
+          <p className="index-year">Based on {selectedCountry.year} data</p>
+
+          <div className="pillar-grid">
+            <div className="pillar">
+              <span>Climate</span>
+              <strong>{selectedCountry.climate_score}</strong>
+            </div>
+
+            <div className="pillar">
+              <span>Energy</span>
+              <strong>{selectedCountry.energy_score}</strong>
+            </div>
+
+            <div className="pillar">
+              <span>Prosperity</span>
+              <strong>{selectedCountry.prosperity_score}</strong>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
