@@ -1,4 +1,13 @@
 import { useEffect, useState } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+} from "recharts";
 
 function Compare() {
   const [countries, setCountries] = useState([]);
@@ -6,6 +15,15 @@ function Compare() {
   const [countryTwo, setCountryTwo] = useState("");
   const [compareYear, setCompareYear] = useState("2024");
   const [comparison, setComparison] = useState([]);
+  const [selectedMetric, setSelectedMetric] = useState("co2");
+
+  const metricLabels = {
+    population: "Population",
+    co2: "CO₂",
+    co2_per_capita: "CO₂ Per Capita",
+    total_ghg: "Total GHG",
+    primary_energy_consumption: "Primary Energy",
+  };
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -75,59 +93,101 @@ function Compare() {
         </div>
 
         {comparison.length > 0 && (
-          <div className="comparison-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Metric</th>
-                  {comparison.map((item) => (
-                    <th key={item.country}>{item.country}</th>
-                  ))}
-                </tr>
-              </thead>
+          <>
+            <div className="metric-selector">
+              <label>Chart Metric: </label>
 
-              <tbody>
-                <tr>
-                  <td>Population</td>
-                  {comparison.map((item) => (
-                    <td key={item.country}>
-                      {Number(item.population).toLocaleString()}
-                    </td>
-                  ))}
-                </tr>
+              <select
+                value={selectedMetric}
+                onChange={(e) => setSelectedMetric(e.target.value)}
+              >
+                <option value="co2">CO₂</option>
+                <option value="population">Population</option>
+                <option value="co2_per_capita">CO₂ Per Capita</option>
+                <option value="total_ghg">Total GHG</option>
+                <option value="primary_energy_consumption">
+                  Primary Energy
+                </option>
+              </select>
+            </div>
 
-                <tr>
-                  <td>CO₂</td>
-                  {comparison.map((item) => (
-                    <td key={item.country}>{item.co2}</td>
-                  ))}
-                </tr>
+            <div className="comparison-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Metric</th>
+                    {comparison.map((item) => (
+                      <th key={item.country}>{item.country}</th>
+                    ))}
+                  </tr>
+                </thead>
 
-                <tr>
-                  <td>CO₂ Per Capita</td>
-                  {comparison.map((item) => (
-                    <td key={item.country}>{item.co2_per_capita}</td>
-                  ))}
-                </tr>
+                <tbody>
+                  <tr>
+                    <td>Population</td>
+                    {comparison.map((item) => (
+                      <td key={item.country}>
+                        {Number(item.population).toLocaleString()}
+                      </td>
+                    ))}
+                  </tr>
 
-                <tr>
-                  <td>Total GHG</td>
-                  {comparison.map((item) => (
-                    <td key={item.country}>{item.total_ghg}</td>
-                  ))}
-                </tr>
+                  <tr>
+                    <td>CO₂</td>
+                    {comparison.map((item) => (
+                      <td key={item.country}>{item.co2}</td>
+                    ))}
+                  </tr>
 
-                <tr>
-                  <td>Primary Energy</td>
-                  {comparison.map((item) => (
-                    <td key={item.country}>
-                      {item.primary_energy_consumption}
-                    </td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                  <tr>
+                    <td>CO₂ Per Capita</td>
+                    {comparison.map((item) => (
+                      <td key={item.country}>{item.co2_per_capita}</td>
+                    ))}
+                  </tr>
+
+                  <tr>
+                    <td>Total GHG</td>
+                    {comparison.map((item) => (
+                      <td key={item.country}>{item.total_ghg}</td>
+                    ))}
+                  </tr>
+
+                  <tr>
+                    <td>Primary Energy</td>
+                    {comparison.map((item) => (
+                      <td key={item.country}>
+                        {item.primary_energy_consumption}
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="chart-card">
+              <h2>{metricLabels[selectedMetric]} Comparison</h2>
+
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={comparison}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="country" />
+                  <YAxis
+                  width={90}
+                  tickFormatter={(value) =>
+                  value >= 1000000
+                  ? `${(value / 1000000).toFixed(1)}M`
+                  : value
+                  }
+                  />
+                  <Tooltip  formatter={(value) =>
+                  Number(value).toLocaleString()
+                  } />
+                  <Bar dataKey={selectedMetric} fill="#0f766e" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </>
         )}
       </div>
     </div>
