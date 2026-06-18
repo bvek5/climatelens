@@ -253,3 +253,88 @@ def compare_sustainability(country_one: str, country_two: str):
         return {"error": "Could not calculate sustainability index for one or both countries"}
 
     return [first, second]
+
+@app.get("/rankings/sustainability")
+def get_sustainability_rankings():
+
+    df = load_climate_data()
+
+    df["gdp_per_capita"] = df["gdp"] / df["population"]
+
+    required_columns = [
+        "country",
+        "iso_code",
+        "year",
+        "co2_per_capita",
+        "ghg_per_capita",
+        "energy_per_gdp",
+        "gdp_per_capita"
+    ]
+
+    clean_df = df.dropna(subset=required_columns).copy()
+
+    clean_df = clean_df[
+        clean_df["iso_code"].notna() &
+        (clean_df["iso_code"].str.len() == 3)
+    ]
+
+    latest_rows = (
+        clean_df.sort_values("year", ascending=False)
+        .groupby("country")
+        .head(1)
+        .copy()
+    )
+
+    latest_rows["climate_raw"] = (
+        latest_rows["co2_per_capita"] + latest_rows["ghg_per_capita"]
+    ) / 2
+
+    max_climate = latest_rows["climate_raw"].max()
+    max_energy = latest_rows["energy_per_gdp"].max()
+    max_prosperity = latest_rows["gdp_per_capita"].max()
+
+    latest_rows["climate_score"] = 100 - (
+        latest_rows["climate_raw"] / max_climate * 100
+    )
+
+    latest_rows["energy_score"] = 100 - (
+        latest_rows["energy_per_gdp"] / max_energy * 100
+    )
+
+    latest_rows["prosperity_score"] = (
+        latest_rows["gdp_per_capita"] / max_prosperity * 100
+    )
+
+    latest_rows["sustainability_index"] = (
+        latest_rows["climate_score"] * 0.40
+        + latest_rows["energy_score"] * 0.30
+        + latest_rows["prosperity_score"] * 0.30
+    )
+
+    rankings = latest_rows[
+        [
+            "country",
+            "year",
+            "sustainability_index",
+            "climate_score",
+            "energy_score",
+            "prosperity_score"
+        ]
+    ].copy()
+
+    rankings = rankings.round(2)
+
+    top_10 = rankings.sort_values(
+        "sustainability_index",
+        ascending=False
+    ).head(10)
+
+    bottom_10 = rankings.sort_values(
+        "sustainability_index",
+        ascending=True
+    ).head(10)
+
+    return {
+        "top_10": top_10.to_dict(orient="records"),
+        "bottom_10": bottom_10.to_dict(orient="records")
+    }
