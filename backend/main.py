@@ -1,8 +1,16 @@
 import pandas as pd
 from fastapi import FastAPI
 from app.services.data_service import load_climate_data, clean_missing_values
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def home():
