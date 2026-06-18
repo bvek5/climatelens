@@ -154,3 +154,21 @@ def compare_countries(country_one: str, country_two: str, year: int):
     result = clean_missing_values(result)
 
     return result.to_dict(orient="records")
+
+@app.get("/compare-history/{country_one}/{country_two}")
+def compare_country_history(country_one: str, country_two: str):
+
+    df = load_climate_data()
+
+    result = df[
+        df["country"].str.lower().isin([country_one.lower(), country_two.lower()])
+    ]
+
+    if result.empty:
+        return {"error": "No data found"}
+
+    result = result[["country", "year", "co2", "co2_per_capita", "population", "total_ghg", "primary_energy_consumption"]]
+
+    result = clean_missing_values(result)
+
+    return result.to_dict(orient="records")

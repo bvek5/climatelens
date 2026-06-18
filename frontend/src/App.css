@@ -187,3 +187,12 @@ h1, h2 {
   border-radius: 8px;
   font-size: 16px;
 }
+
+.error-message {
+  color: #b91c1c;
+  background: #fee2e2;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-top: 15px;
+  font-weight: 600;
+}

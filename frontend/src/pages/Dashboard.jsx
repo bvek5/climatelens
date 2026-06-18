@@ -15,6 +15,7 @@ function Dashboard() {
   const [data, setData] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -27,15 +28,28 @@ function Dashboard() {
   }, []);
 
   const fetchCountry = async () => {
-    if (!country.trim()) return;
+    if (!country.trim()) {
+      setError("Please enter a country name.");
+      return;
+    }
 
     setLoading(true);
+    setError("");
+    setData(null);
+    setHistory([]);
 
     try {
       const latestResponse = await fetch(
         `http://127.0.0.1:8000/country/${country}/latest`
       );
       const latestResult = await latestResponse.json();
+
+      if (latestResult.error) {
+        setError("Country not found. Please select a valid country.");
+        setLoading(false);
+        return;
+      }
+
       setData(latestResult);
 
       const historyResponse = await fetch(
@@ -47,7 +61,7 @@ function Dashboard() {
       setHistory(cleanHistory);
     } catch (error) {
       console.error(error);
-      alert("Country not found.");
+      setError("Could not connect to the backend. Make sure FastAPI is running.");
     }
 
     setLoading(false);
@@ -73,10 +87,12 @@ function Dashboard() {
           ))}
         </datalist>
 
-        <button onClick={fetchCountry}>
+        <button onClick={fetchCountry} disabled={loading}>
           {loading ? "Loading..." : "Search"}
         </button>
       </div>
+
+      {error && <p className="error-message">{error}</p>}
 
       {data && (
         <div className="card">

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -15,7 +17,9 @@ function Compare() {
   const [countryTwo, setCountryTwo] = useState("");
   const [compareYear, setCompareYear] = useState("2024");
   const [comparison, setComparison] = useState([]);
+  const [historyRaw, setHistoryRaw] = useState([]);
   const [selectedMetric, setSelectedMetric] = useState("co2");
+  const [error, setError] = useState("");
 
   const metricLabels = {
     population: "Population",
@@ -35,8 +39,31 @@ function Compare() {
     fetchCountries();
   }, []);
 
+  const buildTrendData = (rawData, metric) => {
+    const years = {};
+
+    rawData.forEach((item) => {
+      if (item[metric] === null || item[metric] === undefined) return;
+
+      if (!years[item.year]) {
+        years[item.year] = { year: item.year };
+      }
+
+      years[item.year][item.country] = item[metric];
+    });
+
+    return Object.values(years).sort((a, b) => a.year - b.year);
+  };
+
   const compareCountries = async () => {
-    if (!countryOne.trim() || !countryTwo.trim() || !compareYear.trim()) return;
+    if (!countryOne.trim() || !countryTwo.trim() || !compareYear.trim()) {
+      setError("Please enter two countries and a year.");
+      return;
+    }
+
+    setError("");
+    setComparison([]);
+    setHistoryRaw([]);
 
     try {
       const response = await fetch(
@@ -44,12 +71,33 @@ function Compare() {
       );
 
       const result = await response.json();
+
+      if (result.error || !Array.isArray(result) || result.length < 2) {
+        setError("Comparison not found. Please select two valid countries and year.");
+        return;
+      }
+
       setComparison(result);
+
+      const historyResponse = await fetch(
+        `http://127.0.0.1:8000/compare-history/${countryOne}/${countryTwo}`
+      );
+
+      const historyResult = await historyResponse.json();
+
+      if (historyResult.error || !Array.isArray(historyResult)) {
+        setError("Trend data not found for these countries.");
+        return;
+      }
+
+      setHistoryRaw(historyResult);
     } catch (error) {
       console.error(error);
-      alert("Comparison failed.");
+      setError("Could not connect to the backend. Make sure FastAPI is running.");
     }
   };
+
+  const trendData = buildTrendData(historyRaw, selectedMetric);
 
   return (
     <div className="container">
@@ -91,6 +139,8 @@ function Compare() {
 
           <button onClick={compareCountries}>Compare</button>
         </div>
+
+        {error && <p className="error-message">{error}</p>}
 
         {comparison.length > 0 && (
           <>
@@ -173,20 +223,58 @@ function Compare() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="country" />
                   <YAxis
-                  width={90}
-                  tickFormatter={(value) =>
-                  value >= 1000000
-                  ? `${(value / 1000000).toFixed(1)}M`
-                  : value
-                  }
+                    width={90}
+                    tickFormatter={(value) =>
+                      value >= 1000000
+                        ? `${(value / 1000000).toFixed(1)}M`
+                        : value
+                    }
                   />
-                  <Tooltip  formatter={(value) =>
-                  Number(value).toLocaleString()
-                  } />
+                  <Tooltip
+                    formatter={(value) => Number(value).toLocaleString()}
+                  />
                   <Bar dataKey={selectedMetric} fill="#0f766e" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
+
+            {trendData.length > 0 && (
+              <div className="chart-card">
+                <h2>{metricLabels[selectedMetric]} Trend Over Time</h2>
+
+                <ResponsiveContainer width="100%" height={320}>
+                  <LineChart data={trendData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+                    <YAxis
+                      width={90}
+                      tickFormatter={(value) =>
+                        value >= 1000000
+                          ? `${(value / 1000000).toFixed(1)}M`
+                          : value
+                      }
+                    />
+                    <Tooltip
+                      formatter={(value) => Number(value).toLocaleString()}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey={countryOne}
+                      stroke="#0f766e"
+                      strokeWidth={4}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey={countryTwo}
+                      stroke="#2563eb"
+                      strokeWidth={4}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </>
         )}
       </div>
