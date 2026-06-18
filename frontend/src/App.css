@@ -142,3 +142,30 @@ h1 {
   background: #f0fdfa;
   color: #0f766e;
 }
+
+.navbar {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px;
+}
+
+.navbar a {
+  text-decoration: none;
+  background: #0f766e;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 8px;
+}
+
+h1, h2 {
+  color: #111827;
+}
+
+.subtitle {
+  color: #64748b;
+}
+
+.container {
+  padding-top: 30px;
+}
