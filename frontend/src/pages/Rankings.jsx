@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_URL } from "../config";
 
 function Rankings() {
   const [topCountries, setTopCountries] = useState([]);
@@ -8,27 +9,66 @@ function Rankings() {
 
   useEffect(() => {
     const fetchRankings = async () => {
+      setLoading(true);
+      setError("");
+
       try {
         const response = await fetch(
-          "http://127.0.0.1:8000/rankings/sustainability"
+          `${API_URL}/rankings/sustainability`
         );
 
         const data = await response.json();
 
-        setTopCountries(data.top_10);
-        setBottomCountries(data.bottom_10);
-      } catch (err) {
-        console.error(err);
-        setError("Could not load rankings. Make sure FastAPI is running.");
-      }
+        if (!response.ok || data.error) {
+          throw new Error(
+            data.error || "Sustainability rankings could not be loaded."
+          );
+        }
 
-      setLoading(false);
+        setTopCountries(
+          Array.isArray(data.top_10) ? data.top_10 : []
+        );
+
+        setBottomCountries(
+          Array.isArray(data.bottom_10) ? data.bottom_10 : []
+        );
+      } catch (error) {
+        console.error("Rankings request failed:", error);
+
+        setError(
+          "Could not load rankings. The ClimateLens server may be starting up. Please try again shortly."
+        );
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchRankings();
   }, []);
 
-  const renderTable = (countries) => (
+  const getRankDisplay = (index) => {
+    if (index === 0) return "🥇";
+    if (index === 1) return "🥈";
+    if (index === 2) return "🥉";
+
+    return index + 1;
+  };
+
+  const formatScore = (score) => {
+    if (score === null || score === undefined) {
+      return "N/A";
+    }
+
+    const numericScore = Number(score);
+
+    if (Number.isNaN(numericScore)) {
+      return "N/A";
+    }
+
+    return numericScore.toFixed(2);
+  };
+
+  const renderTable = (countries, showMedals = false) => (
     <table>
       <thead>
         <tr>
@@ -38,18 +78,32 @@ function Rankings() {
           <th>Climate</th>
           <th>Energy</th>
           <th>Prosperity</th>
+          <th>Year</th>
         </tr>
       </thead>
 
       <tbody>
         {countries.map((item, index) => (
-          <tr key={item.country}>
-            <td>{index + 1}</td>
+          <tr key={`${item.country}-${item.year}`}>
+            <td>
+              {showMedals ? getRankDisplay(index) : index + 1}
+            </td>
+
             <td>{item.country}</td>
-            <td>{item.sustainability_index}</td>
-            <td>{item.climate_score}</td>
-            <td>{item.energy_score}</td>
-            <td>{item.prosperity_score}</td>
+
+            <td>
+              <strong>
+                {formatScore(item.sustainability_index)}
+              </strong>
+            </td>
+
+            <td>{formatScore(item.climate_score)}</td>
+
+            <td>{formatScore(item.energy_score)}</td>
+
+            <td>{formatScore(item.prosperity_score)}</td>
+
+            <td>{item.year ?? "N/A"}</td>
           </tr>
         ))}
       </tbody>
@@ -59,11 +113,16 @@ function Rankings() {
   return (
     <div className="container">
       <h1>🏆 Sustainability Rankings</h1>
+
       <p className="subtitle">
         Explore the highest and lowest Sustainability Index scores globally
       </p>
 
-      {loading && <p className="loading-message">Loading rankings...</p>}
+      {loading && (
+        <p className="loading-message">
+          Loading rankings. The server may take a moment to wake up.
+        </p>
+      )}
 
       {error && <p className="error-message">{error}</p>}
 
@@ -71,14 +130,26 @@ function Rankings() {
         <>
           <div className="chart-card">
             <h2>Top 10 Sustainability Index Countries</h2>
-            <div className="comparison-table">{renderTable(topCountries)}</div>
+
+            {topCountries.length > 0 ? (
+              <div className="comparison-table">
+                {renderTable(topCountries, true)}
+              </div>
+            ) : (
+              <p>No top-ranking country data is available.</p>
+            )}
           </div>
 
           <div className="chart-card">
             <h2>Bottom 10 Sustainability Index Countries</h2>
-            <div className="comparison-table">
-              {renderTable(bottomCountries)}
-            </div>
+
+            {bottomCountries.length > 0 ? (
+              <div className="comparison-table">
+                {renderTable(bottomCountries)}
+              </div>
+            ) : (
+              <p>No bottom-ranking country data is available.</p>
+            )}
           </div>
         </>
       )}

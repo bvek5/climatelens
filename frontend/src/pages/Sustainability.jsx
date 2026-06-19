@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { API_URL } from "../config";
 
 function Sustainability() {
   const [country, setCountry] = useState("");
   const [countries, setCountries] = useState([]);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const getRating = (score) => {
     if (score >= 75) return "🟢 Strong Sustainability";
@@ -14,41 +16,74 @@ function Sustainability() {
 
   useEffect(() => {
     const fetchCountries = async () => {
-      const response = await fetch("http://127.0.0.1:8000/countries");
-      const data = await response.json();
-      setCountries(data.countries);
+      try {
+        const response = await fetch(`${API_URL}/countries`);
+
+        if (!response.ok) {
+          throw new Error("Could not load countries.");
+        }
+
+        const data = await response.json();
+        setCountries(data.countries || []);
+      } catch (error) {
+        console.error("Countries request failed:", error);
+        setError(
+          "Could not load the country list. The server may be starting up."
+        );
+      }
     };
 
     fetchCountries();
   }, []);
 
   const searchCountry = async () => {
-    if (!country.trim()) {
+    const cleanCountry = country.trim();
+
+    if (!cleanCountry) {
       setError("Please enter a country.");
       return;
     }
 
+    setLoading(true);
     setError("");
     setResult(null);
 
     try {
+      const encodedCountry = encodeURIComponent(cleanCountry);
+
       const response = await fetch(
-        `http://127.0.0.1:8000/sustainability/${country}`
+        `${API_URL}/sustainability/${encodedCountry}`
       );
 
       const data = await response.json();
 
-      if (data.error) {
-        setError(data.error);
+      if (!response.ok || data.error) {
+        setError(
+          data.error || "Sustainability data was not found for this country."
+        );
         return;
       }
 
       setResult(data);
-    } catch (err) {
-      console.error(err);
-      setError("Could not connect to backend.");
+    } catch (error) {
+      console.error("Sustainability request failed:", error);
+      setError(
+        "Could not connect to the ClimateLens server. Please try again shortly."
+      );
+    } finally {
+      setLoading(false);
     }
   };
+
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter") {
+      searchCountry();
+    }
+  };
+
+  const progressWidth = result
+    ? Math.min(Math.max(Number(result.sustainability_index) || 0, 0), 100)
+    : 0;
 
   return (
     <div className="container">
@@ -64,7 +99,8 @@ function Sustainability() {
           type="text"
           placeholder="Search country..."
           value={country}
-          onChange={(e) => setCountry(e.target.value)}
+          onChange={(event) => setCountry(event.target.value)}
+          onKeyDown={handleKeyDown}
         />
 
         <datalist id="sustainability-country-list">
@@ -73,8 +109,17 @@ function Sustainability() {
           ))}
         </datalist>
 
-        <button onClick={searchCountry}>Calculate</button>
+        <button onClick={searchCountry} disabled={loading}>
+          {loading ? "Calculating..." : "Calculate"}
+        </button>
       </div>
+
+      {loading && (
+        <p className="loading-message">
+          Calculating the Sustainability Index. The server may take a moment to
+          wake up.
+        </p>
+      )}
 
       {error && <p className="error-message">{error}</p>}
 
@@ -83,35 +128,39 @@ function Sustainability() {
           <h2>{result.country}</h2>
 
           <div className="index-score">
-            {result.sustainability_index}
+            {result.sustainability_index ?? "N/A"}
             <span>/100</span>
           </div>
 
-          <p className="index-label">{getRating(result.sustainability_index)}</p>
+          <p className="index-label">
+            {getRating(Number(result.sustainability_index) || 0)}
+          </p>
 
           <div className="progress-bar">
             <div
               className="progress-fill"
-              style={{ width: `${result.sustainability_index}%` }}
-            ></div>
+              style={{ width: `${progressWidth}%` }}
+            />
           </div>
 
-          <p className="index-year">Based on {result.year} data</p>
+          <p className="index-year">
+            Based on {result.year ?? "the latest available"} data
+          </p>
 
           <div className="pillar-grid">
             <div className="pillar">
               <span>Climate Score</span>
-              <strong>{result.climate_score}</strong>
+              <strong>{result.climate_score ?? "N/A"}</strong>
             </div>
 
             <div className="pillar">
               <span>Energy Score</span>
-              <strong>{result.energy_score}</strong>
+              <strong>{result.energy_score ?? "N/A"}</strong>
             </div>
 
             <div className="pillar">
               <span>Prosperity Score</span>
-              <strong>{result.prosperity_score}</strong>
+              <strong>{result.prosperity_score ?? "N/A"}</strong>
             </div>
           </div>
 
@@ -120,7 +169,7 @@ function Sustainability() {
 
             <p>
               <strong>Climate Score:</strong> Measures emissions pressure using
-              CO₂ per capita and greenhouse gas emissions per capita. A higher
+              CO₂ per capita and greenhouse-gas emissions per capita. A higher
               score means lower climate impact.
             </p>
 

@@ -8,6 +8,7 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
+import { API_URL } from "../config";
 
 function Dashboard() {
   const [country, setCountry] = useState("");
@@ -19,16 +20,30 @@ function Dashboard() {
 
   useEffect(() => {
     const fetchCountries = async () => {
-      const response = await fetch("http://127.0.0.1:8000/countries");
-      const result = await response.json();
-      setCountries(result.countries);
+      try {
+        const response = await fetch(`${API_URL}/countries`);
+
+        if (!response.ok) {
+          throw new Error("Could not load countries.");
+        }
+
+        const result = await response.json();
+        setCountries(result.countries || []);
+      } catch (error) {
+        console.error("Countries request failed:", error);
+        setError(
+          "Could not load the country list. The server may be starting up."
+        );
+      }
     };
 
     fetchCountries();
   }, []);
 
   const fetchCountry = async () => {
-    if (!country.trim()) {
+    const cleanCountry = country.trim();
+
+    if (!cleanCountry) {
       setError("Please enter a country name.");
       return;
     }
@@ -39,32 +54,51 @@ function Dashboard() {
     setHistory([]);
 
     try {
+      const encodedCountry = encodeURIComponent(cleanCountry);
+
       const latestResponse = await fetch(
-        `http://127.0.0.1:8000/country/${country}/latest`
+        `${API_URL}/country/${encodedCountry}/latest`
       );
+
       const latestResult = await latestResponse.json();
 
-      if (latestResult.error) {
+      if (!latestResponse.ok || latestResult.error) {
         setError("Country not found. Please select a valid country.");
-        setLoading(false);
         return;
       }
 
       setData(latestResult);
 
       const historyResponse = await fetch(
-        `http://127.0.0.1:8000/country/${country}/history`
+        `${API_URL}/country/${encodedCountry}/history`
       );
+
       const historyResult = await historyResponse.json();
 
-      const cleanHistory = historyResult.filter((item) => item.co2 !== null);
+      if (!historyResponse.ok || !Array.isArray(historyResult)) {
+        setError("Historical data could not be loaded for this country.");
+        return;
+      }
+
+      const cleanHistory = historyResult.filter(
+        (item) => item.co2 !== null && item.co2 !== undefined
+      );
+
       setHistory(cleanHistory);
     } catch (error) {
-      console.error(error);
-      setError("Could not connect to the backend. Make sure FastAPI is running.");
+      console.error("Country request failed:", error);
+      setError(
+        "Could not connect to the ClimateLens server. Please try again shortly."
+      );
+    } finally {
+      setLoading(false);
     }
+  };
 
-    setLoading(false);
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter") {
+      fetchCountry();
+    }
   };
 
   return (
@@ -78,7 +112,8 @@ function Dashboard() {
           type="text"
           placeholder="Search country..."
           value={country}
-          onChange={(e) => setCountry(e.target.value)}
+          onChange={(event) => setCountry(event.target.value)}
+          onKeyDown={handleKeyDown}
         />
 
         <datalist id="country-list">
@@ -91,6 +126,12 @@ function Dashboard() {
           {loading ? "Loading..." : "Search"}
         </button>
       </div>
+
+      {loading && (
+        <p className="loading-message">
+          Loading country data. The server may take a moment to wake up.
+        </p>
+      )}
 
       {error && <p className="error-message">{error}</p>}
 
@@ -106,27 +147,32 @@ function Dashboard() {
 
             <div className="stat">
               <span>Population</span>
-              <strong>{Number(data.population).toLocaleString()}</strong>
+              <strong>
+                {data.population !== null &&
+                data.population !== undefined
+                  ? Number(data.population).toLocaleString()
+                  : "N/A"}
+              </strong>
             </div>
 
             <div className="stat">
               <span>CO₂</span>
-              <strong>{data.co2}</strong>
+              <strong>{data.co2 ?? "N/A"}</strong>
             </div>
 
             <div className="stat">
               <span>CO₂ Per Capita</span>
-              <strong>{data.co2_per_capita}</strong>
+              <strong>{data.co2_per_capita ?? "N/A"}</strong>
             </div>
 
             <div className="stat">
               <span>Total GHG</span>
-              <strong>{data.total_ghg}</strong>
+              <strong>{data.total_ghg ?? "N/A"}</strong>
             </div>
 
             <div className="stat">
               <span>Primary Energy</span>
-              <strong>{data.primary_energy_consumption}</strong>
+              <strong>{data.primary_energy_consumption ?? "N/A"}</strong>
             </div>
           </div>
         </div>
@@ -139,9 +185,22 @@ function Dashboard() {
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={history}>
               <CartesianGrid strokeDasharray="3 3" />
+
               <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
+
+              <YAxis
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) =>
+                  Number(value).toLocaleString()
+                }
+              />
+
+              <Tooltip
+                formatter={(value) =>
+                  Number(value).toLocaleString()
+                }
+              />
+
               <Line
                 type="monotone"
                 dataKey="co2"
