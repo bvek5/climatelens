@@ -10,7 +10,7 @@ function Landing() {
 
     setTimeout(() => {
       navigate("/dashboard");
-    }, 600);
+    }, 700);
   };
 
   return (

@@ -507,7 +507,7 @@ h1, h2 {
 }
 
 .landing-exit {
-  animation: landingFadeOut 0.6s ease forwards;
+  animation: landingFadeOut 0.7s ease forwards;
 }
 
 @keyframes landingFadeOut {
@@ -518,7 +518,7 @@ h1, h2 {
 
   to {
     opacity: 0;
-    transform: scale(1.03);
+    transform: scale(1.04);
   }
 }
 
