@@ -396,3 +396,133 @@ h1, h2 {
   height: 45px;
   margin-top: 15px;
 }
+
+/* =========================
+   LANDING PAGE - FINAL
+========================= */
+
+.landing-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  background: radial-gradient(circle at center, #eefdf9 0%, #ffffff 62%);
+}
+
+.landing-earth {
+  width: 340px;
+  height: 340px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: none;
+  box-shadow:
+    0 28px 65px rgba(15, 118, 110, 0.18),
+    0 0 80px rgba(15, 118, 110, 0.1);
+  animation: earthFloat 4s ease-in-out infinite;
+}
+
+@keyframes earthFloat {
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.landing-title {
+  margin: 8px 0 0;
+  font-size: 92px;
+  font-weight: 900;
+  letter-spacing: -4px;
+  line-height: 1;
+  color: #0f172a;
+}
+
+.landing-title span {
+  color: #0f766e;
+}
+
+.landing-divider {
+  width: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin: 14px 0 26px;
+  color: #0f766e;
+  font-size: 22px;
+}
+
+.landing-divider::before,
+.landing-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #cbd5e1;
+}
+
+.landing-button {
+  text-decoration: none;
+  background: linear-gradient(135deg, #0f766e, #0d9488);
+  color: white;
+  padding: 18px 52px;
+  border-radius: 14px;
+  font-size: 22px;
+  font-weight: 700;
+  box-shadow: 0 16px 36px rgba(15, 118, 110, 0.28);
+  transition: all 0.3s ease;
+}
+
+.landing-button:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 44px rgba(15, 118, 110, 0.35);
+}
+
+.landing-button span {
+  margin-left: 12px;
+}
+
+@media (max-width: 768px) {
+  .landing-earth {
+    width: 250px;
+    height: 250px;
+  }
+
+  .landing-title {
+    font-size: 58px;
+    letter-spacing: -2px;
+  }
+
+  .landing-divider {
+    width: 220px;
+  }
+}
+
+.landing-exit {
+  animation: landingFadeOut 0.6s ease forwards;
+}
+
+@keyframes landingFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+}
+
+.landing-button {
+  border: none;
+  cursor: pointer;
+}
