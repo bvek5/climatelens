@@ -8,7 +8,9 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
+
 import { API_URL } from "../config";
+import DownloadPDFButton from "../components/DownloadPDFButton";
 
 function Dashboard() {
   const [country, setCountry] = useState("");
@@ -31,6 +33,7 @@ function Dashboard() {
         setCountries(result.countries || []);
       } catch (error) {
         console.error("Countries request failed:", error);
+
         setError(
           "Could not load the country list. The server may be starting up."
         );
@@ -87,6 +90,7 @@ function Dashboard() {
       setHistory(cleanHistory);
     } catch (error) {
       console.error("Country request failed:", error);
+
       setError(
         "Could not connect to the ClimateLens server. Please try again shortly."
       );
@@ -101,10 +105,21 @@ function Dashboard() {
     }
   };
 
+  const formatValue = (value) => {
+    if (value === null || value === undefined) {
+      return "N/A";
+    }
+
+    return Number(value).toLocaleString();
+  };
+
   return (
     <div className="container">
       <h1>🌍 ClimateLens</h1>
-      <p className="subtitle">Explore climate and emissions data by country</p>
+
+      <p className="subtitle">
+        Explore climate and emissions data by country
+      </p>
 
       <div className="search-box">
         <input
@@ -122,7 +137,11 @@ function Dashboard() {
           ))}
         </datalist>
 
-        <button onClick={fetchCountry} disabled={loading}>
+        <button
+          type="button"
+          onClick={fetchCountry}
+          disabled={loading}
+        >
           {loading ? "Loading..." : "Search"}
         </button>
       </div>
@@ -136,81 +155,137 @@ function Dashboard() {
       {error && <p className="error-message">{error}</p>}
 
       {data && (
-        <div className="card">
-          <h2>{data.country}</h2>
+        <>
+          <div id="dashboard-report" className="pdf-report">
+            <div className="card">
+              <h2>{data.country}</h2>
 
-          <div className="stats">
-            <div className="stat">
-              <span>Latest Year</span>
-              <strong>{data.latest_year}</strong>
+              <p className="index-year">
+                Climate and emissions overview based on the latest available
+                data
+              </p>
+
+              <div className="stats">
+                <div className="stat">
+                  <span>Latest Year</span>
+                  <strong>{data.latest_year ?? "N/A"}</strong>
+                </div>
+
+                <div className="stat">
+                  <span>Population</span>
+                  <strong>{formatValue(data.population)}</strong>
+                </div>
+
+                <div className="stat">
+                  <span>CO₂</span>
+                  <strong>{formatValue(data.co2)}</strong>
+                </div>
+
+                <div className="stat">
+                  <span>CO₂ Per Capita</span>
+                  <strong>{formatValue(data.co2_per_capita)}</strong>
+                </div>
+
+                <div className="stat">
+                  <span>Total GHG</span>
+                  <strong>{formatValue(data.total_ghg)}</strong>
+                </div>
+
+                <div className="stat">
+                  <span>Primary Energy</span>
+
+                  <strong>
+                    {formatValue(data.primary_energy_consumption)}
+                  </strong>
+                </div>
+              </div>
             </div>
 
-            <div className="stat">
-              <span>Population</span>
-              <strong>
-                {data.population !== null &&
-                data.population !== undefined
-                  ? Number(data.population).toLocaleString()
-                  : "N/A"}
-              </strong>
-            </div>
+            {history.length > 0 && (
+              <div className="chart-card">
+                <h2>CO₂ Emissions Trend</h2>
 
-            <div className="stat">
-              <span>CO₂</span>
-              <strong>{data.co2 ?? "N/A"}</strong>
-            </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart
+                    data={history}
+                    margin={{
+                      top: 10,
+                      right: 20,
+                      left: 10,
+                      bottom: 10,
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
 
-            <div className="stat">
-              <span>CO₂ Per Capita</span>
-              <strong>{data.co2_per_capita ?? "N/A"}</strong>
-            </div>
+                    <XAxis
+                      dataKey="year"
+                      tick={{ fontSize: 12 }}
+                    />
 
-            <div className="stat">
-              <span>Total GHG</span>
-              <strong>{data.total_ghg ?? "N/A"}</strong>
-            </div>
+                    <YAxis
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value) =>
+                        Number(value).toLocaleString()
+                      }
+                    />
 
-            <div className="stat">
-              <span>Primary Energy</span>
-              <strong>{data.primary_energy_consumption ?? "N/A"}</strong>
+                    <Tooltip
+                      formatter={(value) =>
+                        Number(value).toLocaleString()
+                      }
+                    />
+
+                    <Line
+                      type="monotone"
+                      dataKey="co2"
+                      name="CO₂"
+                      stroke="#0f766e"
+                      strokeWidth={4}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            <div className="explanation-box">
+              <h3>Report information</h3>
+
+              <p>
+                <strong>CO₂:</strong> Annual carbon dioxide emissions for the
+                selected country.
+              </p>
+
+              <p>
+                <strong>CO₂ Per Capita:</strong> Annual carbon dioxide
+                emissions divided by population.
+              </p>
+
+              <p>
+                <strong>Total GHG:</strong> Total greenhouse-gas emissions
+                expressed using the available dataset measurement.
+              </p>
+
+              <p>
+                <strong>Primary Energy:</strong> Total primary-energy
+                consumption reported in the source dataset.
+              </p>
+
+              <p>
+                <strong>Source:</strong> ClimateLens data API using the Our
+                World in Data climate dataset.
+              </p>
             </div>
           </div>
-        </div>
-      )}
 
-      {history.length > 0 && (
-        <div className="chart-card">
-          <h2>CO₂ Emissions Trend</h2>
-
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={history}>
-              <CartesianGrid strokeDasharray="3 3" />
-
-              <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-
-              <YAxis
-                tick={{ fontSize: 12 }}
-                tickFormatter={(value) =>
-                  Number(value).toLocaleString()
-                }
-              />
-
-              <Tooltip
-                formatter={(value) =>
-                  Number(value).toLocaleString()
-                }
-              />
-
-              <Line
-                type="monotone"
-                dataKey="co2"
-                stroke="#0f766e"
-                strokeWidth={4}
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+          <div className="download-pdf-container">
+            <DownloadPDFButton
+              targetId="dashboard-report"
+              fileName={`${data.country}-climate-report.pdf`}
+              reportTitle={`${data.country} ClimateLens Report`}
+            />
+          </div>
+        </>
       )}
     </div>
   );
