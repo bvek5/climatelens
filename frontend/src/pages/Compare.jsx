@@ -10,7 +10,9 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
+
 import { API_URL } from "../config";
+import DownloadPDFButton from "../components/DownloadPDFButton";
 
 function Compare() {
   const [countries, setCountries] = useState([]);
@@ -45,6 +47,7 @@ function Compare() {
         setCountries(result.countries || []);
       } catch (error) {
         console.error("Countries request failed:", error);
+
         setError(
           "Could not load the country list. The server may be starting up."
         );
@@ -63,7 +66,9 @@ function Compare() {
       }
 
       if (!years[item.year]) {
-        years[item.year] = { year: item.year };
+        years[item.year] = {
+          year: item.year,
+        };
       }
 
       years[item.year][item.country] = item[metric];
@@ -149,6 +154,7 @@ function Compare() {
       setHistoryRaw(historyResult);
     } catch (error) {
       console.error("Comparison request failed:", error);
+
       setError(
         "Could not connect to the ClimateLens server. Please try again shortly."
       );
@@ -174,7 +180,13 @@ function Compare() {
       return "N/A";
     }
 
-    return Number(value).toLocaleString();
+    const number = Number(value);
+
+    if (Number.isNaN(number)) {
+      return "N/A";
+    }
+
+    return number.toLocaleString();
   };
 
   const formatAxisValue = (value) => {
@@ -210,7 +222,10 @@ function Compare() {
   return (
     <div className="container">
       <h1>🌍 ClimateLens Compare</h1>
-      <p className="subtitle">Compare two countries by year</p>
+
+      <p className="subtitle">
+        Compare two countries by year and sustainability performance
+      </p>
 
       <datalist id="country-list">
         {countries.map((item) => (
@@ -248,7 +263,11 @@ function Compare() {
             onKeyDown={handleKeyDown}
           />
 
-          <button onClick={compareCountries} disabled={loading}>
+          <button
+            type="button"
+            onClick={compareCountries}
+            disabled={loading}
+          >
             {loading ? "Loading..." : "Compare"}
           </button>
         </div>
@@ -263,213 +282,188 @@ function Compare() {
 
         {comparison.length > 0 && (
           <>
-            {sustainabilityComparison.length >= 2 && (
-              <div className="chart-card">
-                <h2>Sustainability Index Comparison</h2>
+            <div id="comparison-report" className="pdf-report">
+              {sustainabilityComparison.length >= 2 && (
+                <div className="chart-card">
+                  <h2>Sustainability Index Comparison</h2>
 
-                {(() => {
-                  const firstCountry = sustainabilityComparison[0];
-                  const secondCountry = sustainabilityComparison[1];
+                  {(() => {
+                    const firstCountry = sustainabilityComparison[0];
+                    const secondCountry = sustainabilityComparison[1];
 
-                  const winner =
-                    firstCountry.sustainability_index >=
-                    secondCountry.sustainability_index
-                      ? firstCountry
-                      : secondCountry;
+                    const winner =
+                      firstCountry.sustainability_index >=
+                      secondCountry.sustainability_index
+                        ? firstCountry
+                        : secondCountry;
 
-                  const loser =
-                    winner.country === firstCountry.country
-                      ? secondCountry
-                      : firstCountry;
+                    const loser =
+                      winner.country === firstCountry.country
+                        ? secondCountry
+                        : firstCountry;
 
-                  const difference = Math.abs(
-                    winner.sustainability_index -
-                      loser.sustainability_index
-                  ).toFixed(2);
+                    const difference = Math.abs(
+                      winner.sustainability_index -
+                        loser.sustainability_index
+                    ).toFixed(2);
 
-                  return (
-                    <div className="winner-box">
-                      <h3>
-                        🏆 {winner.country} has the higher Sustainability Index
-                      </h3>
-
-                      <p>
-                        {winner.country} scores {difference} points higher than{" "}
-                        {loser.country}.
-                      </p>
-                    </div>
-                  );
-                })()}
-
-                <div className="sustainability-compare-grid">
-                  {sustainabilityComparison.map((item) => (
-                    <div
-                      className="sustainability-mini-card"
-                      key={item.country}
-                    >
-                      <h3>{item.country}</h3>
-
-                      <div className="mini-index-score">
-                        {item.sustainability_index}
-                        <span>/100</span>
-                      </div>
-
-                      <p className="mini-rating">
-                        {getRating(item.sustainability_index)}
-                      </p>
-
-                      <div className="progress-bar">
-                        <div
-                          className="progress-fill"
-                          style={{
-                            width: `${Math.min(
-                              Math.max(item.sustainability_index, 0),
-                              100
-                            )}%`,
-                          }}
-                        />
-                      </div>
-
-                      <div className="mini-pillars">
-                        <p>
-                          Climate:{" "}
-                          <strong>{item.climate_score ?? "N/A"}</strong>
-                        </p>
+                    return (
+                      <div className="winner-box">
+                        <h3>
+                          🏆 {winner.country} has the higher Sustainability Index
+                        </h3>
 
                         <p>
-                          Energy:{" "}
-                          <strong>{item.energy_score ?? "N/A"}</strong>
-                        </p>
-
-                        <p>
-                          Prosperity:{" "}
-                          <strong>{item.prosperity_score ?? "N/A"}</strong>
+                          {winner.country} scores {difference} points higher
+                          than {loser.country}.
                         </p>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })()}
+
+                  <div className="sustainability-compare-grid">
+                    {sustainabilityComparison.map((item) => (
+                      <div
+                        className="sustainability-mini-card"
+                        key={item.country}
+                      >
+                        <h3>{item.country}</h3>
+
+                        <div className="mini-index-score">
+                          {item.sustainability_index}
+                          <span>/100</span>
+                        </div>
+
+                        <p className="mini-rating">
+                          {getRating(item.sustainability_index)}
+                        </p>
+
+                        <div className="progress-bar">
+                          <div
+                            className="progress-fill"
+                            style={{
+                              width: `${Math.min(
+                                Math.max(item.sustainability_index, 0),
+                                100
+                              )}%`,
+                            }}
+                          />
+                        </div>
+
+                        <div className="mini-pillars">
+                          <p>
+                            Climate:{" "}
+                            <strong>{item.climate_score ?? "N/A"}</strong>
+                          </p>
+
+                          <p>
+                            Energy:{" "}
+                            <strong>{item.energy_score ?? "N/A"}</strong>
+                          </p>
+
+                          <p>
+                            Prosperity:{" "}
+                            <strong>{item.prosperity_score ?? "N/A"}</strong>
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+              )}
+
+              <div className="metric-selector">
+                <label htmlFor="metric-select">Chart Metric:</label>
+
+                <select
+                  id="metric-select"
+                  value={selectedMetric}
+                  onChange={(event) => setSelectedMetric(event.target.value)}
+                >
+                  <option value="co2">CO₂</option>
+                  <option value="population">Population</option>
+                  <option value="co2_per_capita">CO₂ Per Capita</option>
+                  <option value="total_ghg">Total GHG</option>
+                  <option value="primary_energy_consumption">
+                    Primary Energy
+                  </option>
+                </select>
               </div>
-            )}
 
-            <div className="metric-selector">
-              <label htmlFor="metric-select">Chart Metric:</label>
+              <div className="comparison-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Metric</th>
 
-              <select
-                id="metric-select"
-                value={selectedMetric}
-                onChange={(event) => setSelectedMetric(event.target.value)}
-              >
-                <option value="co2">CO₂</option>
-                <option value="population">Population</option>
-                <option value="co2_per_capita">CO₂ Per Capita</option>
-                <option value="total_ghg">Total GHG</option>
-                <option value="primary_energy_consumption">
-                  Primary Energy
-                </option>
-              </select>
-            </div>
+                      {comparison.map((item) => (
+                        <th key={item.country}>{item.country}</th>
+                      ))}
+                    </tr>
+                  </thead>
 
-            <div className="comparison-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Metric</th>
+                  <tbody>
+                    <tr>
+                      <td>Population</td>
 
-                    {comparison.map((item) => (
-                      <th key={item.country}>{item.country}</th>
-                    ))}
-                  </tr>
-                </thead>
+                      {comparison.map((item) => (
+                        <td key={item.country}>
+                          {formatValue(item.population)}
+                        </td>
+                      ))}
+                    </tr>
 
-                <tbody>
-                  <tr>
-                    <td>Population</td>
+                    <tr>
+                      <td>CO₂</td>
 
-                    {comparison.map((item) => (
-                      <td key={item.country}>
-                        {formatValue(item.population)}
-                      </td>
-                    ))}
-                  </tr>
+                      {comparison.map((item) => (
+                        <td key={item.country}>
+                          {formatValue(item.co2)}
+                        </td>
+                      ))}
+                    </tr>
 
-                  <tr>
-                    <td>CO₂</td>
+                    <tr>
+                      <td>CO₂ Per Capita</td>
 
-                    {comparison.map((item) => (
-                      <td key={item.country}>{formatValue(item.co2)}</td>
-                    ))}
-                  </tr>
+                      {comparison.map((item) => (
+                        <td key={item.country}>
+                          {formatValue(item.co2_per_capita)}
+                        </td>
+                      ))}
+                    </tr>
 
-                  <tr>
-                    <td>CO₂ Per Capita</td>
+                    <tr>
+                      <td>Total GHG</td>
 
-                    {comparison.map((item) => (
-                      <td key={item.country}>
-                        {formatValue(item.co2_per_capita)}
-                      </td>
-                    ))}
-                  </tr>
+                      {comparison.map((item) => (
+                        <td key={item.country}>
+                          {formatValue(item.total_ghg)}
+                        </td>
+                      ))}
+                    </tr>
 
-                  <tr>
-                    <td>Total GHG</td>
+                    <tr>
+                      <td>Primary Energy</td>
 
-                    {comparison.map((item) => (
-                      <td key={item.country}>
-                        {formatValue(item.total_ghg)}
-                      </td>
-                    ))}
-                  </tr>
+                      {comparison.map((item) => (
+                        <td key={item.country}>
+                          {formatValue(item.primary_energy_consumption)}
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-                  <tr>
-                    <td>Primary Energy</td>
-
-                    {comparison.map((item) => (
-                      <td key={item.country}>
-                        {formatValue(item.primary_energy_consumption)}
-                      </td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div className="chart-card">
-              <h2>{metricLabels[selectedMetric]} Comparison</h2>
-
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={comparison}>
-                  <CartesianGrid strokeDasharray="3 3" />
-
-                  <XAxis dataKey="country" />
-
-                  <YAxis
-                    width={90}
-                    tickFormatter={formatAxisValue}
-                  />
-
-                  <Tooltip formatter={(value) => formatValue(value)} />
-
-                  <Bar
-                    dataKey={selectedMetric}
-                    fill="#0f766e"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {trendData.length > 0 && (
               <div className="chart-card">
-                <h2>{metricLabels[selectedMetric]} Trend Over Time</h2>
+                <h2>{metricLabels[selectedMetric]} Comparison</h2>
 
-                <ResponsiveContainer width="100%" height={320}>
-                  <LineChart data={trendData}>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={comparison}>
                     <CartesianGrid strokeDasharray="3 3" />
 
-                    <XAxis
-                      dataKey="year"
-                      tick={{ fontSize: 12 }}
-                    />
+                    <XAxis dataKey="country" />
 
                     <YAxis
                       width={90}
@@ -478,25 +472,83 @@ function Compare() {
 
                     <Tooltip formatter={(value) => formatValue(value)} />
 
-                    <Line
-                      type="monotone"
-                      dataKey={chartCountryOne}
-                      stroke="#0f766e"
-                      strokeWidth={4}
-                      dot={false}
+                    <Bar
+                      dataKey={selectedMetric}
+                      fill="#0f766e"
                     />
-
-                    <Line
-                      type="monotone"
-                      dataKey={chartCountryTwo}
-                      stroke="#2563eb"
-                      strokeWidth={4}
-                      dot={false}
-                    />
-                  </LineChart>
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
-            )}
+
+              {trendData.length > 0 && (
+                <div className="chart-card">
+                  <h2>{metricLabels[selectedMetric]} Trend Over Time</h2>
+
+                  <ResponsiveContainer width="100%" height={320}>
+                    <LineChart data={trendData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+
+                      <XAxis
+                        dataKey="year"
+                        tick={{ fontSize: 12 }}
+                      />
+
+                      <YAxis
+                        width={90}
+                        tickFormatter={formatAxisValue}
+                      />
+
+                      <Tooltip formatter={(value) => formatValue(value)} />
+
+                      <Line
+                        type="monotone"
+                        dataKey={chartCountryOne}
+                        stroke="#0f766e"
+                        strokeWidth={4}
+                        dot={false}
+                      />
+
+                      <Line
+                        type="monotone"
+                        dataKey={chartCountryTwo}
+                        stroke="#2563eb"
+                        strokeWidth={4}
+                        dot={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              <div className="explanation-box">
+                <h3>Comparison information</h3>
+
+                <p>
+                  This report compares climate, emissions, energy, population,
+                  and sustainability indicators for {chartCountryOne} and{" "}
+                  {chartCountryTwo}.
+                </p>
+
+                <p>
+                  <strong>Important:</strong> The ClimateLens Sustainability
+                  Index is a calculated analytical indicator and is not an
+                  official government or international ranking.
+                </p>
+
+                <p>
+                  <strong>Source:</strong> ClimateLens data API using the Our
+                  World in Data climate dataset.
+                </p>
+              </div>
+            </div>
+
+            <div className="download-pdf-container">
+              <DownloadPDFButton
+                targetId="comparison-report"
+                fileName={`${chartCountryOne}-vs-${chartCountryTwo}-comparison-report.pdf`}
+                reportTitle={`${chartCountryOne} vs ${chartCountryTwo} ClimateLens Comparison`}
+              />
+            </div>
           </>
         )}
       </div>

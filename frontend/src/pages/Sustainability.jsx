@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+
 import { API_URL } from "../config";
+import DownloadPDFButton from "../components/DownloadPDFButton";
 
 function Sustainability() {
   const [country, setCountry] = useState("");
@@ -27,6 +29,7 @@ function Sustainability() {
         setCountries(data.countries || []);
       } catch (error) {
         console.error("Countries request failed:", error);
+
         setError(
           "Could not load the country list. The server may be starting up."
         );
@@ -67,6 +70,7 @@ function Sustainability() {
       setResult(data);
     } catch (error) {
       console.error("Sustainability request failed:", error);
+
       setError(
         "Could not connect to the ClimateLens server. Please try again shortly."
       );
@@ -82,7 +86,10 @@ function Sustainability() {
   };
 
   const progressWidth = result
-    ? Math.min(Math.max(Number(result.sustainability_index) || 0, 0), 100)
+    ? Math.min(
+        Math.max(Number(result.sustainability_index) || 0, 0),
+        100
+      )
     : 0;
 
   return (
@@ -109,7 +116,11 @@ function Sustainability() {
           ))}
         </datalist>
 
-        <button onClick={searchCountry} disabled={loading}>
+        <button
+          type="button"
+          onClick={searchCountry}
+          disabled={loading}
+        >
           {loading ? "Calculating..." : "Calculate"}
         </button>
       </div>
@@ -124,71 +135,95 @@ function Sustainability() {
       {error && <p className="error-message">{error}</p>}
 
       {result && (
-        <div className="sustainability-card">
-          <h2>{result.country}</h2>
+        <>
+          <div id="sustainability-report" className="pdf-report">
+            <div className="sustainability-card">
+              <h2>{result.country}</h2>
 
-          <div className="index-score">
-            {result.sustainability_index ?? "N/A"}
-            <span>/100</span>
+              <div className="index-score">
+                {result.sustainability_index ?? "N/A"}
+                <span>/100</span>
+              </div>
+
+              <p className="index-label">
+                {getRating(Number(result.sustainability_index) || 0)}
+              </p>
+
+              <div className="progress-bar">
+                <div
+                  className="progress-fill"
+                  style={{ width: `${progressWidth}%` }}
+                />
+              </div>
+
+              <p className="index-year">
+                Based on {result.year ?? "the latest available"} data
+              </p>
+
+              <div className="pillar-grid">
+                <div className="pillar">
+                  <span>Climate Score</span>
+                  <strong>{result.climate_score ?? "N/A"}</strong>
+                </div>
+
+                <div className="pillar">
+                  <span>Energy Score</span>
+                  <strong>{result.energy_score ?? "N/A"}</strong>
+                </div>
+
+                <div className="pillar">
+                  <span>Prosperity Score</span>
+                  <strong>{result.prosperity_score ?? "N/A"}</strong>
+                </div>
+              </div>
+
+              <div className="explanation-box">
+                <h3>Why this score?</h3>
+
+                <p>
+                  <strong>Climate Score:</strong> Measures emissions pressure
+                  using CO₂ per capita and greenhouse-gas emissions per capita.
+                  A higher score means lower climate impact.
+                </p>
+
+                <p>
+                  <strong>Energy Score:</strong> Measures how efficiently a
+                  country uses energy compared with economic output. A higher
+                  score means better energy efficiency.
+                </p>
+
+                <p>
+                  <strong>Prosperity Score:</strong> Uses GDP per capita to
+                  represent economic development. A higher score means stronger
+                  economic prosperity.
+                </p>
+
+                <p>
+                  <strong>Important:</strong> The ClimateLens Sustainability
+                  Index is a calculated analytical indicator and is not an
+                  official government or international ranking.
+                </p>
+
+                <p>
+                  <strong>Source:</strong> ClimateLens data API using the Our
+                  World in Data climate dataset.
+                </p>
+              </div>
+            </div>
           </div>
 
-          <p className="index-label">
-            {getRating(Number(result.sustainability_index) || 0)}
-          </p>
-
-          <div className="progress-bar">
-            <div
-              className="progress-fill"
-              style={{ width: `${progressWidth}%` }}
+          <div className="download-pdf-container">
+            <DownloadPDFButton
+              targetId="sustainability-report"
+              fileName={`${result.country}-sustainability-report.pdf`}
+              reportTitle={`${result.country} Sustainability Report`}
             />
           </div>
-
-          <p className="index-year">
-            Based on {result.year ?? "the latest available"} data
-          </p>
-
-          <div className="pillar-grid">
-            <div className="pillar">
-              <span>Climate Score</span>
-              <strong>{result.climate_score ?? "N/A"}</strong>
-            </div>
-
-            <div className="pillar">
-              <span>Energy Score</span>
-              <strong>{result.energy_score ?? "N/A"}</strong>
-            </div>
-
-            <div className="pillar">
-              <span>Prosperity Score</span>
-              <strong>{result.prosperity_score ?? "N/A"}</strong>
-            </div>
-          </div>
-
-          <div className="explanation-box">
-            <h3>Why this score?</h3>
-
-            <p>
-              <strong>Climate Score:</strong> Measures emissions pressure using
-              CO₂ per capita and greenhouse-gas emissions per capita. A higher
-              score means lower climate impact.
-            </p>
-
-            <p>
-              <strong>Energy Score:</strong> Measures how efficiently a country
-              uses energy compared with economic output. A higher score means
-              better energy efficiency.
-            </p>
-
-            <p>
-              <strong>Prosperity Score:</strong> Uses GDP per capita to capture
-              economic development. A higher score means stronger economic
-              prosperity.
-            </p>
-          </div>
-        </div>
+        </>
       )}
     </div>
   );
 }
 
 export default Sustainability;
+

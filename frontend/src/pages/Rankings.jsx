@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+
 import { API_URL } from "../config";
+import DownloadPDFButton from "../components/DownloadPDFButton";
 
 function Rankings() {
   const [topCountries, setTopCountries] = useState([]);
@@ -128,28 +130,73 @@ function Rankings() {
 
       {!loading && !error && (
         <>
-          <div className="chart-card">
-            <h2>Top 10 Sustainability Index Countries</h2>
+          <div id="rankings-report" className="pdf-report">
+            <div className="chart-card">
+              <h2>Top 10 Sustainability Index Countries</h2>
 
-            {topCountries.length > 0 ? (
-              <div className="comparison-table">
-                {renderTable(topCountries, true)}
-              </div>
-            ) : (
-              <p>No top-ranking country data is available.</p>
-            )}
+              {topCountries.length > 0 ? (
+                <div className="comparison-table">
+                  {renderTable(topCountries, true)}
+                </div>
+              ) : (
+                <p>No top-ranking country data is available.</p>
+              )}
+            </div>
+
+            <div className="chart-card">
+              <h2>Bottom 10 Sustainability Index Countries</h2>
+
+              {bottomCountries.length > 0 ? (
+                <div className="comparison-table">
+                  {renderTable(bottomCountries)}
+                </div>
+              ) : (
+                <p>No bottom-ranking country data is available.</p>
+              )}
+            </div>
+
+            <div className="explanation-box">
+              <h3>Ranking methodology</h3>
+
+              <p>
+                Rankings are based on the ClimateLens Sustainability Index,
+                which combines climate, energy, and prosperity indicators.
+              </p>
+
+              <p>
+                <strong>Climate Score:</strong> Reflects emissions pressure
+                based on carbon and greenhouse-gas indicators.
+              </p>
+
+              <p>
+                <strong>Energy Score:</strong> Reflects energy efficiency
+                compared with economic output.
+              </p>
+
+              <p>
+                <strong>Prosperity Score:</strong> Reflects economic
+                development using GDP per capita.
+              </p>
+
+              <p>
+                <strong>Important:</strong> The ClimateLens Sustainability
+                Index is a calculated analytical indicator and should not be
+                interpreted as an official international ranking.
+              </p>
+
+              <p>
+                <strong>Source:</strong> ClimateLens data API using the Our
+                World in Data climate dataset.
+              </p>
+            </div>
           </div>
 
-          <div className="chart-card">
-            <h2>Bottom 10 Sustainability Index Countries</h2>
-
-            {bottomCountries.length > 0 ? (
-              <div className="comparison-table">
-                {renderTable(bottomCountries)}
-              </div>
-            ) : (
-              <p>No bottom-ranking country data is available.</p>
-            )}
+          <div className="download-pdf-container">
+            <DownloadPDFButton
+              targetId="rankings-report"
+              fileName="global-sustainability-rankings.pdf"
+              reportTitle="ClimateLens Global Sustainability Rankings"
+            />
           </div>
         </>
       )}
@@ -158,3 +205,4 @@ function Rankings() {
 }
 
 export default Rankings;
+
