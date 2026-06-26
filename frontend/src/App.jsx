@@ -1,4 +1,12 @@
-import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  NavLink,
+  useLocation,
+} from "react-router-dom";
+
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Compare from "./pages/Compare";
@@ -10,16 +18,58 @@ import "./App.css";
 function AppContent() {
   const location = useLocation();
   const isLandingPage = location.pathname === "/";
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
+  const getLinkClass = ({ isActive }) =>
+    isActive ? "navbar-link active" : "navbar-link";
 
   return (
     <>
       {!isLandingPage && (
         <nav className="navbar">
-          <Link to="/dashboard">Dashboard</Link>
-          <Link to="/compare">Compare</Link>
-          <Link to="/sustainability">Sustainability</Link>
-          <Link to="/rankings">Rankings</Link>
-          <Link to="/map">World Map</Link>
+          <div className="navbar-inner">
+            <NavLink to="/dashboard" className="navbar-brand">
+              Climate<span>Lens</span>
+            </NavLink>
+
+            <button
+              type="button"
+              className="navbar-toggle"
+              aria-label="Toggle navigation menu"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((currentValue) => !currentValue)}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+
+            <div className={`navbar-links ${menuOpen ? "open" : ""}`}>
+              <NavLink to="/dashboard" className={getLinkClass}>
+                Dashboard
+              </NavLink>
+
+              <NavLink to="/compare" className={getLinkClass}>
+                Compare
+              </NavLink>
+
+              <NavLink to="/sustainability" className={getLinkClass}>
+                Sustainability
+              </NavLink>
+
+              <NavLink to="/rankings" className={getLinkClass}>
+                Rankings
+              </NavLink>
+
+              <NavLink to="/map" className={getLinkClass}>
+                World Map
+              </NavLink>
+            </div>
+          </div>
         </nav>
       )}
 
