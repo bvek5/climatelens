@@ -11,6 +11,7 @@ import {
 
 import { API_URL } from "../config";
 import DownloadPDFButton from "../components/DownloadPDFButton";
+import DownloadCSVButton from "../components/DownloadCSVButton";
 
 function Dashboard() {
   const [country, setCountry] = useState("");
@@ -84,7 +85,7 @@ function Dashboard() {
       }
 
       const cleanHistory = historyResult.filter(
-        (item) => item.co2 !== null && item.co2 !== undefined
+        (item) => item.year !== null && item.year !== undefined
       );
 
       setHistory(cleanHistory);
@@ -106,12 +107,64 @@ function Dashboard() {
   };
 
   const formatValue = (value) => {
-    if (value === null || value === undefined) {
+    if (value === null || value === undefined || value === "") {
       return "N/A";
     }
 
-    return Number(value).toLocaleString();
+    const numericValue = Number(value);
+
+    if (Number.isNaN(numericValue)) {
+      return value;
+    }
+
+    return numericValue.toLocaleString();
   };
+
+  const dashboardCSVColumns = [
+    {
+      key: "year",
+      label: "Year",
+    },
+    {
+      key: "country",
+      label: "Country",
+    },
+    {
+      key: "population",
+      label: "Population",
+    },
+    {
+      key: "co2",
+      label: "CO2",
+    },
+    {
+      key: "co2_per_capita",
+      label: "CO2 Per Capita",
+    },
+    {
+      key: "total_ghg",
+      label: "Total GHG",
+    },
+    {
+      key: "primary_energy_consumption",
+      label: "Primary Energy Consumption",
+    },
+  ];
+
+  const dashboardCSVData = history.map((item) => ({
+    year: item.year ?? "",
+    country: item.country ?? data?.country ?? country,
+    population: item.population ?? "",
+    co2: item.co2 ?? "",
+    co2_per_capita: item.co2_per_capita ?? "",
+    total_ghg: item.total_ghg ?? "",
+    primary_energy_consumption:
+      item.primary_energy_consumption ?? "",
+  }));
+
+  const chartHistory = history.filter(
+    (item) => item.co2 !== null && item.co2 !== undefined
+  );
 
   return (
     <div className="container">
@@ -193,7 +246,6 @@ function Dashboard() {
 
                 <div className="stat">
                   <span>Primary Energy</span>
-
                   <strong>
                     {formatValue(data.primary_energy_consumption)}
                   </strong>
@@ -201,13 +253,13 @@ function Dashboard() {
               </div>
             </div>
 
-            {history.length > 0 && (
+            {chartHistory.length > 0 && (
               <div className="chart-card">
                 <h2>CO₂ Emissions Trend</h2>
 
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart
-                    data={history}
+                    data={chartHistory}
                     margin={{
                       top: 10,
                       right: 20,
@@ -263,7 +315,7 @@ function Dashboard() {
 
               <p>
                 <strong>Total GHG:</strong> Total greenhouse-gas emissions
-                expressed using the available dataset measurement.
+                available in the source dataset.
               </p>
 
               <p>
@@ -278,11 +330,17 @@ function Dashboard() {
             </div>
           </div>
 
-          <div className="download-pdf-container">
+          <div className="download-actions">
             <DownloadPDFButton
               targetId="dashboard-report"
               fileName={`${data.country}-climate-report.pdf`}
               reportTitle={`${data.country} ClimateLens Report`}
+            />
+
+            <DownloadCSVButton
+              data={dashboardCSVData}
+              columns={dashboardCSVColumns}
+              fileName={`${data.country}-climate-history.csv`}
             />
           </div>
         </>
