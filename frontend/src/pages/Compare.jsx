@@ -13,6 +13,7 @@ import {
 
 import { API_URL } from "../config";
 import DownloadPDFButton from "../components/DownloadPDFButton";
+import DownloadCSVButton from "../components/DownloadCSVButton";
 
 function Compare() {
   const [countries, setCountries] = useState([]);
@@ -47,7 +48,6 @@ function Compare() {
         setCountries(result.countries || []);
       } catch (error) {
         console.error("Countries request failed:", error);
-
         setError(
           "Could not load the country list. The server may be starting up."
         );
@@ -66,9 +66,7 @@ function Compare() {
       }
 
       if (!years[item.year]) {
-        years[item.year] = {
-          year: item.year,
-        };
+        years[item.year] = { year: item.year };
       }
 
       years[item.year][item.country] = item[metric];
@@ -154,7 +152,6 @@ function Compare() {
       setHistoryRaw(historyResult);
     } catch (error) {
       console.error("Comparison request failed:", error);
-
       setError(
         "Could not connect to the ClimateLens server. Please try again shortly."
       );
@@ -180,13 +177,13 @@ function Compare() {
       return "N/A";
     }
 
-    const number = Number(value);
+    const numericValue = Number(value);
 
-    if (Number.isNaN(number)) {
-      return "N/A";
+    if (Number.isNaN(numericValue)) {
+      return value;
     }
 
-    return number.toLocaleString();
+    return numericValue.toLocaleString();
   };
 
   const formatAxisValue = (value) => {
@@ -218,6 +215,49 @@ function Compare() {
       (item) =>
         item.country.toLowerCase() === countryTwo.trim().toLowerCase()
     )?.country || countryTwo.trim();
+
+  const comparisonCSVColumns = [
+    { key: "country", label: "Country" },
+    { key: "year", label: "Year" },
+    { key: "population", label: "Population" },
+    { key: "co2", label: "CO2" },
+    { key: "co2_per_capita", label: "CO2 Per Capita" },
+    { key: "total_ghg", label: "Total GHG" },
+    {
+      key: "primary_energy_consumption",
+      label: "Primary Energy Consumption",
+    },
+    {
+      key: "sustainability_index",
+      label: "Sustainability Index",
+    },
+    { key: "climate_score", label: "Climate Score" },
+    { key: "energy_score", label: "Energy Score" },
+    { key: "prosperity_score", label: "Prosperity Score" },
+  ];
+
+  const comparisonCSVData = comparison.map((item) => {
+    const sustainabilityData = sustainabilityComparison.find(
+      (scoreItem) =>
+        scoreItem.country.toLowerCase() === item.country.toLowerCase()
+    );
+
+    return {
+      country: item.country,
+      year: item.year ?? compareYear,
+      population: item.population ?? "",
+      co2: item.co2 ?? "",
+      co2_per_capita: item.co2_per_capita ?? "",
+      total_ghg: item.total_ghg ?? "",
+      primary_energy_consumption:
+        item.primary_energy_consumption ?? "",
+      sustainability_index:
+        sustainabilityData?.sustainability_index ?? "",
+      climate_score: sustainabilityData?.climate_score ?? "",
+      energy_score: sustainabilityData?.energy_score ?? "",
+      prosperity_score: sustainabilityData?.prosperity_score ?? "",
+    };
+  });
 
   return (
     <div className="container">
@@ -462,20 +502,10 @@ function Compare() {
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={comparison}>
                     <CartesianGrid strokeDasharray="3 3" />
-
                     <XAxis dataKey="country" />
-
-                    <YAxis
-                      width={90}
-                      tickFormatter={formatAxisValue}
-                    />
-
+                    <YAxis width={90} tickFormatter={formatAxisValue} />
                     <Tooltip formatter={(value) => formatValue(value)} />
-
-                    <Bar
-                      dataKey={selectedMetric}
-                      fill="#0f766e"
-                    />
+                    <Bar dataKey={selectedMetric} fill="#0f766e" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -487,17 +517,8 @@ function Compare() {
                   <ResponsiveContainer width="100%" height={320}>
                     <LineChart data={trendData}>
                       <CartesianGrid strokeDasharray="3 3" />
-
-                      <XAxis
-                        dataKey="year"
-                        tick={{ fontSize: 12 }}
-                      />
-
-                      <YAxis
-                        width={90}
-                        tickFormatter={formatAxisValue}
-                      />
-
+                      <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+                      <YAxis width={90} tickFormatter={formatAxisValue} />
                       <Tooltip formatter={(value) => formatValue(value)} />
 
                       <Line
@@ -532,7 +553,7 @@ function Compare() {
                 <p>
                   <strong>Important:</strong> The ClimateLens Sustainability
                   Index is a calculated analytical indicator and is not an
-                  official government or international ranking.
+                  official international ranking.
                 </p>
 
                 <p>
@@ -542,11 +563,17 @@ function Compare() {
               </div>
             </div>
 
-            <div className="download-pdf-container">
+            <div className="download-actions">
               <DownloadPDFButton
                 targetId="comparison-report"
                 fileName={`${chartCountryOne}-vs-${chartCountryTwo}-comparison-report.pdf`}
                 reportTitle={`${chartCountryOne} vs ${chartCountryTwo} ClimateLens Comparison`}
+              />
+
+              <DownloadCSVButton
+                data={comparisonCSVData}
+                columns={comparisonCSVColumns}
+                fileName={`${chartCountryOne}-vs-${chartCountryTwo}-comparison.csv`}
               />
             </div>
           </>

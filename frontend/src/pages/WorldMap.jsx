@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { geoPath, geoNaturalEarth1 } from "d3-geo";
 import { feature } from "topojson-client";
+
 import { API_URL } from "../config";
+import DownloadCSVButton from "../components/DownloadCSVButton";
 
 const geoUrl =
   "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
@@ -22,15 +24,26 @@ function WorldMap() {
   const pathGenerator = geoPath().projection(projection);
 
   useEffect(() => {
-    const loadWorldMap = async () => {
+    const loadPageData = async () => {
+      setLoading(true);
+      setError("");
+
       try {
-        const mapResponse = await fetch(geoUrl);
+        const [mapResponse, rankingsResponse] = await Promise.all([
+          fetch(geoUrl),
+          fetch(`${API_URL}/rankings/sustainability`),
+        ]);
 
         if (!mapResponse.ok) {
           throw new Error("Could not load the world map.");
         }
 
+        if (!rankingsResponse.ok) {
+          throw new Error("Could not load sustainability rankings.");
+        }
+
         const mapData = await mapResponse.json();
+        const rankingsData = await rankingsResponse.json();
 
         const countryFeatures = feature(
           mapData,
@@ -38,50 +51,23 @@ function WorldMap() {
         ).features;
 
         setCountries(countryFeatures);
-      } catch (error) {
-        console.error("World map request failed:", error);
-        throw error;
-      }
-    };
-
-    const loadRankings = async () => {
-      try {
-        const response = await fetch(
-          `${API_URL}/rankings/sustainability`
-        );
-
-        const data = await response.json();
-
-        if (!response.ok || data.error) {
-          throw new Error(
-            data.error || "Sustainability rankings could not be loaded."
-          );
-        }
 
         setTopCountries(
-          Array.isArray(data.top_10) ? data.top_10 : []
+          Array.isArray(rankingsData.top_10)
+            ? rankingsData.top_10
+            : []
         );
 
         setBottomCountries(
-          Array.isArray(data.bottom_10) ? data.bottom_10 : []
+          Array.isArray(rankingsData.bottom_10)
+            ? rankingsData.bottom_10
+            : []
         );
       } catch (error) {
-        console.error("Rankings request failed:", error);
-        throw error;
-      }
-    };
-
-    const loadPageData = async () => {
-      setLoading(true);
-      setError("");
-
-      try {
-        await Promise.all([loadWorldMap(), loadRankings()]);
-      } catch (error) {
-        console.error("World map page failed to load:", error);
+        console.error("World map page failed:", error);
 
         setError(
-          "Could not load the sustainability map. The server may be starting up. Please try again shortly."
+          "Could not load the sustainability map. Please try again shortly."
         );
       } finally {
         setLoading(false);
@@ -92,16 +78,14 @@ function WorldMap() {
   }, []);
 
   const normalizeCountryName = (name) =>
-    name
-      ?.toLowerCase()
-      .trim()
-      .replace(/\s+/g, " ");
+    name?.toLowerCase().trim().replace(/\s+/g, " ");
 
   const countryNameAliases = {
     "united states of america": "united states",
     "russian federation": "russia",
     "republic of korea": "south korea",
-    "democratic republic of the congo": "democratic republic of congo",
+    "democratic republic of the congo":
+      "democratic republic of congo",
     "republic of the congo": "congo",
     "czech republic": "czechia",
     "ivory coast": "cote d'ivoire",
@@ -170,6 +154,65 @@ function WorldMap() {
     return numericScore.toFixed(2);
   };
 
+  const mapCSVColumns = [
+    {
+      key: "group",
+      label: "Map Group",
+    },
+    {
+      key: "rank",
+      label: "Group Rank",
+    },
+    {
+      key: "country",
+      label: "Country",
+    },
+    {
+      key: "sustainability_index",
+      label: "Sustainability Index",
+    },
+    {
+      key: "climate_score",
+      label: "Climate Score",
+    },
+    {
+      key: "energy_score",
+      label: "Energy Score",
+    },
+    {
+      key: "prosperity_score",
+      label: "Prosperity Score",
+    },
+    {
+      key: "year",
+      label: "Year",
+    },
+  ];
+
+  const mapCSVData = [
+    ...topCountries.map((item, index) => ({
+      group: "Top 10",
+      rank: index + 1,
+      country: item.country,
+      sustainability_index: item.sustainability_index ?? "",
+      climate_score: item.climate_score ?? "",
+      energy_score: item.energy_score ?? "",
+      prosperity_score: item.prosperity_score ?? "",
+      year: item.year ?? "",
+    })),
+
+    ...bottomCountries.map((item, index) => ({
+      group: "Bottom 10",
+      rank: index + 1,
+      country: item.country,
+      sustainability_index: item.sustainability_index ?? "",
+      climate_score: item.climate_score ?? "",
+      energy_score: item.energy_score ?? "",
+      prosperity_score: item.prosperity_score ?? "",
+      year: item.year ?? "",
+    })),
+  ];
+
   return (
     <div className="container">
       <h1>🌍 World Sustainability Map</h1>
@@ -181,8 +224,7 @@ function WorldMap() {
 
       {loading && (
         <p className="loading-message">
-          Loading the world map and sustainability rankings. The server may
-          take a moment to wake up.
+          Loading the world map and sustainability rankings.
         </p>
       )}
 
@@ -201,7 +243,7 @@ function WorldMap() {
               viewBox="0 0 900 500"
               className="world-map-svg"
               role="img"
-              aria-label="World map showing top and bottom sustainability countries"
+              aria-label="World sustainability map"
             >
               {countries.map((country) => {
                 const name =
@@ -245,14 +287,13 @@ function WorldMap() {
               <h2>{selectedCountry.country}</h2>
 
               <div className="index-score">
-                {formatScore(
-                  selectedCountry.sustainability_index
-                )}
+                {formatScore(selectedCountry.sustainability_index)}
                 <span>/100</span>
               </div>
 
               <p className="index-year">
-                Based on {selectedCountry.year ?? "the latest available"} data
+                Based on{" "}
+                {selectedCountry.year ?? "the latest available"} data
               </p>
 
               <div className="pillar-grid">
@@ -286,6 +327,14 @@ function WorldMap() {
               </button>
             </div>
           )}
+
+          <div className="download-actions">
+            <DownloadCSVButton
+              data={mapCSVData}
+              columns={mapCSVColumns}
+              fileName="world-sustainability-map-data.csv"
+            />
+          </div>
         </>
       )}
     </div>
@@ -293,4 +342,3 @@ function WorldMap() {
 }
 
 export default WorldMap;
-

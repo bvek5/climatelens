@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { API_URL } from "../config";
 import DownloadPDFButton from "../components/DownloadPDFButton";
+import DownloadCSVButton from "../components/DownloadCSVButton";
 
 function Rankings() {
   const [topCountries, setTopCountries] = useState([]);
@@ -112,6 +113,65 @@ function Rankings() {
     </table>
   );
 
+  const rankingsCSVColumns = [
+    {
+      key: "group",
+      label: "Ranking Group",
+    },
+    {
+      key: "rank",
+      label: "Group Rank",
+    },
+    {
+      key: "country",
+      label: "Country",
+    },
+    {
+      key: "sustainability_index",
+      label: "Sustainability Index",
+    },
+    {
+      key: "climate_score",
+      label: "Climate Score",
+    },
+    {
+      key: "energy_score",
+      label: "Energy Score",
+    },
+    {
+      key: "prosperity_score",
+      label: "Prosperity Score",
+    },
+    {
+      key: "year",
+      label: "Year",
+    },
+  ];
+
+  const rankingsCSVData = [
+    ...topCountries.map((item, index) => ({
+      group: "Top 10",
+      rank: index + 1,
+      country: item.country,
+      sustainability_index: item.sustainability_index ?? "",
+      climate_score: item.climate_score ?? "",
+      energy_score: item.energy_score ?? "",
+      prosperity_score: item.prosperity_score ?? "",
+      year: item.year ?? "",
+    })),
+
+    ...bottomCountries.map((item, index) => ({
+      group: "Bottom 10",
+      rank: index + 1,
+      country: item.country,
+      sustainability_index: item.sustainability_index ?? "",
+      climate_score: item.climate_score ?? "",
+      energy_score: item.energy_score ?? "",
+      prosperity_score: item.prosperity_score ?? "",
+      year: item.year ?? "",
+    })),
+  ];
+
   return (
     <div className="container">
       <h1>🏆 Sustainability Rankings</h1>
@@ -165,7 +225,7 @@ function Rankings() {
 
               <p>
                 <strong>Climate Score:</strong> Reflects emissions pressure
-                based on carbon and greenhouse-gas indicators.
+                using carbon and greenhouse-gas indicators.
               </p>
 
               <p>
@@ -191,11 +251,17 @@ function Rankings() {
             </div>
           </div>
 
-          <div className="download-pdf-container">
+          <div className="download-actions">
             <DownloadPDFButton
               targetId="rankings-report"
               fileName="global-sustainability-rankings.pdf"
               reportTitle="ClimateLens Global Sustainability Rankings"
+            />
+
+            <DownloadCSVButton
+              data={rankingsCSVData}
+              columns={rankingsCSVColumns}
+              fileName="global-sustainability-rankings.csv"
             />
           </div>
         </>
@@ -205,4 +271,3 @@ function Rankings() {
 }
 
 export default Rankings;
-

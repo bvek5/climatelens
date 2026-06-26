@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { API_URL } from "../config";
 import DownloadPDFButton from "../components/DownloadPDFButton";
+import DownloadCSVButton from "../components/DownloadCSVButton";
 
 function Sustainability() {
   const [country, setCountry] = useState("");
@@ -91,6 +92,36 @@ function Sustainability() {
         100
       )
     : 0;
+
+  const sustainabilityCSVColumns = [
+    { key: "country", label: "Country" },
+    { key: "year", label: "Year" },
+    {
+      key: "sustainability_index",
+      label: "Sustainability Index",
+    },
+    { key: "rating", label: "Sustainability Rating" },
+    { key: "climate_score", label: "Climate Score" },
+    { key: "energy_score", label: "Energy Score" },
+    { key: "prosperity_score", label: "Prosperity Score" },
+  ];
+
+  const sustainabilityCSVData = result
+    ? [
+        {
+          country: result.country,
+          year: result.year ?? "",
+          sustainability_index: result.sustainability_index ?? "",
+          rating: getRating(Number(result.sustainability_index) || 0)
+            .replace("🟢 ", "")
+            .replace("🟡 ", "")
+            .replace("🔴 ", ""),
+          climate_score: result.climate_score ?? "",
+          energy_score: result.energy_score ?? "",
+          prosperity_score: result.prosperity_score ?? "",
+        },
+      ]
+    : [];
 
   return (
     <div className="container">
@@ -212,11 +243,17 @@ function Sustainability() {
             </div>
           </div>
 
-          <div className="download-pdf-container">
+          <div className="download-actions">
             <DownloadPDFButton
               targetId="sustainability-report"
               fileName={`${result.country}-sustainability-report.pdf`}
               reportTitle={`${result.country} Sustainability Report`}
+            />
+
+            <DownloadCSVButton
+              data={sustainabilityCSVData}
+              columns={sustainabilityCSVColumns}
+              fileName={`${result.country}-sustainability-data.csv`}
             />
           </div>
         </>
@@ -226,4 +263,3 @@ function Sustainability() {
 }
 
 export default Sustainability;
-
